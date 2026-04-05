@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Management</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    .time-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .time-row input {
+      flex: 1;
+      height: 34px;
+      min-width: 0;
+    }
+
+    .time-row select {
+      width: 50px;
+      min-width: 50px;
+      height: 34px;
+      padding: 0 4px;
+      font-size: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .loss-red {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      min-width: 260px;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      animation: slideInToast 0.25s ease;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+    }
+
+    .toast.info {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+
+    @keyframes slideInToast {
+      from {
+        opacity: 0;
+        transform: translateX(80px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+
+        <ul class="menu">
+  <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+  <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+  <li><a href="staff-management.html" class="active"><i class="fas fa-users"></i> Staff Management</a></li>
+  <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+  <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+</ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>ERP Dashboard Template</p>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <select>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Yearly</option>
+          </select>
+          <button type="button" onclick="window.print()">Print</button>
+          <div class="profile-box"></div>
+        </div>
+      </div>
+
+      <section class="page active">
+        <div class="section-box">
+          <h2>Staff / Karigar Management</h2>
+          <p>Yahan staff details, work entry, attendance, payment aur monthly summary manage hoga.</p>
+
+          <div class="sub-card">
+            <h3>Staff / Karigar</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="staffName">Name</label>
+                <input id="staffName" type="text" placeholder="Karigar / Staff Name" />
+              </div>
+
+              <div class="input-box">
+                <label for="staffMobile">Mobile</label>
+                <input id="staffMobile" type="text" placeholder="Mobile Number" />
+              </div>
+
+              <div class="input-box">
+                <label for="staffJoinDate">Join Date</label>
+                <input id="staffJoinDate" type="date" />
+              </div>
+
+              <div class="input-box">
+                <label for="staffMonthlySalary">Monthly Salary</label>
+                <input id="staffMonthlySalary" type="number" placeholder="15000" />
+              </div>
+
+              <div class="input-box" style="grid-column: 1 / -1;">
+                <label for="staffAddress">Address / Note</label>
+                <textarea id="staffAddress" placeholder="Address / note" style="min-height:80px; padding:10px;"></textarea>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="primary-btn" type="button" onclick="saveStaff()">Save Staff</button>
+              <button class="secondary-btn" type="button" onclick="clearStaffForm()">Clear</button>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Work Given / Return Entry</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="workStaffName">Staff Name</label>
+                <select id="workStaffName"></select>
+              </div>
+
+              <div class="input-box">
+                <label for="workLotNo">Lot No</label>
+                <input id="workLotNo" type="text" placeholder="Lot No" />
+              </div>
+
+              <div class="input-box">
+                <label for="workWhatGiven">Process type</label>
+                <input id="workWhatGiven" type="text" placeholder="Example: Sankha raw / cutting job" />
+              </div>
+
+              <div class="input-box">
+                <label for="workGivenWeight">Given Weight</label>
+                <input id="workGivenWeight" type="number" step="0.001" placeholder="Given Weight" />
+              </div>
+
+              <div class="input-box">
+                <label for="workGivenDate">Given Date</label>
+                <input id="workGivenDate" type="date" />
+              </div>
+
+              <div class="input-box">
+                <label for="workGivenTime">Given Time</label>
+                <input id="workGivenTime" type="time" />
+              </div>
+
+              <div class="input-box">
+                <label for="workReturnWeight">Returned Weight</label>
+                <input id="workReturnWeight" type="number" step="0.001" placeholder="Returned Weight" />
+              </div>
+
+              <div class="input-box">
+                <label for="workReturnDate">Return Date</label>
+                <input id="workReturnDate" type="date" />
+              </div>
+
+              <div class="input-box">
+                <label for="workReturnTime">Return Time</label>
+                <input id="workReturnTime" type="time" />
+              </div>
+
+              <div class="input-box">
+                <label for="workStatus">Status</label>
+                <select id="workStatus" onchange="toggleWorkMode()">
+                  <option value="GIVEN">GIVEN</option>
+                  <option value="RETURNED">RETURNED</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="primary-btn" type="button" onclick="saveWorkEntry()">Save Work Entry</button>
+              <button class="secondary-btn" type="button" onclick="clearWorkForm()">Clear</button>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+  <h3>Attendance History</h3>
+
+  <div class="form-grid" style="margin-bottom:10px;">
+    <div class="input-box">
+      <label>Select Staff</label>
+      <select id="attendanceFilterName"></select>
+    </div>
+
+    <div class="input-box">
+      <label>Select Month</label>
+      <input type="month" id="attendanceFilterMonth" />
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-bottom:10px;">
+    <button class="primary-btn" onclick="filterAttendance()">Show</button>
+    <button class="secondary-btn" onclick="clearAttendanceFilter()">Clear</button>
+  </div>
+
+  <div id="attendanceSummaryBox" style="margin-bottom:10px; display:none;">
+    <b id="attSumPresent">Present: 0</b> |
+    <b id="attSumAbsent">Absent: 0</b> |
+    <b id="attSumHalf">Half Day: 0</b>
+  </div>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="attendanceStaffName">Staff Name</label>
+                <select id="attendanceStaffName"></select>
+              </div>
+
+              <div class="input-box">
+                <label for="attendanceDate">Date</label>
+                <input id="attendanceDate" type="date" />
+              </div>
+
+              <div class="input-box">
+                <label for="attendanceStatus">Status</label>
+                <select id="attendanceStatus">
+                  <option value="PRESENT">PRESENT</option>
+                  <option value="ABSENT">ABSENT</option>
+                  <option value="HALF DAY">HALF DAY</option>
+                </select>
+              </div>
+
+              <div class="input-box">
+                <label for="attendanceInTime">In Time</label>
+                <div class="time-row">
+                  <input id="attendanceInTime" type="time" />
+                  <select id="attendanceInAmPm">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="input-box">
+                <label for="attendanceOutTime">Out Time</label>
+                <div class="time-row">
+                  <input id="attendanceOutTime" type="time" />
+                  <select id="attendanceOutAmPm">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="primary-btn" type="button" onclick="saveAttendance()">Save Attendance</button>
+              <button class="secondary-btn" type="button" onclick="clearAttendanceForm()">Clear</button>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Advance / Payment Entry</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="paymentStaffName">Staff Name</label>
+                <select id="paymentStaffName"></select>
+              </div>
+
+              <div class="input-box">
+                <label for="paymentDate">Date</label>
+                <input id="paymentDate" type="date" />
+              </div>
+
+              <div class="input-box">
+                <label for="paymentAmount">Amount</label>
+                <input id="paymentAmount" type="number" placeholder="5000" />
+              </div>
+
+              <div class="input-box" style="grid-column: 1 / -1;">
+                <label for="paymentReason">Reason</label>
+                <textarea id="paymentReason" placeholder="Kyun liya / kisliye diya" style="min-height:80px; padding:10px;"></textarea>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="primary-btn" type="button" onclick="savePayment()">Save Payment</button>
+              <button class="secondary-btn" type="button" onclick="clearPaymentForm()">Clear</button>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Staff Summary</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="summaryStaffName">Select Staff</label>
+                <select id="summaryStaffName"></select>
+              </div>
+
+              <div class="input-box">
+                <label for="summaryMonth">Select Month</label>
+                <input type="month" id="summaryMonth" />
+              </div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-top:16px;">
+              <div class="stat-card"><h3 id="sumSalary">Monthly Salary: 0</h3></div>
+              <div class="stat-card"><h3 id="sumAdvance">Total Advance: 0</h3></div>
+              <div class="stat-card"><h3 id="sumBalance">Balance Salary: 0</h3></div>
+              <div class="stat-card"><h3 id="sumLoss">Total Loss: 0</h3></div>
+              <div class="stat-card"><h3 id="sumGiven">Total Given Weight: 0</h3></div>
+              <div class="stat-card"><h3 id="sumReturned">Total Returned Weight: 0</h3></div>
+              <div class="stat-card"><h3 id="sumPresent">Present Days: 0</h3></div>
+              <div class="stat-card"><h3 id="sumAbsent">Absent Days: 0</h3></div>
+              <div class="stat-card"><h3 id="sumHalfDay">Half Days: 0</h3></div>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Saved Staff</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Mobile</th>
+                  <th>Join Date</th>
+                  <th>Monthly Salary</th>
+                  <th>Address / Note</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Work History</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Lot</th>
+                  <th>Kya Diya</th>
+                  <th>Given Weight</th>
+                  <th>Returned Weight</th>
+                  <th>Loss</th>
+                  <th>Given Date/Time</th>
+                  <th>Return Date/Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="workTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Attendance History</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>In Time</th>
+                  <th>Out Time</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceTableBody" style="display:none;"></tbody>
+            </table>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Advance / Payment History</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="paymentTableBody"></tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastBox" class="toast-box"></div>
+
+  <script>
+    let staffData = JSON.parse(localStorage.getItem("staffData")) || [];
+    let workData = JSON.parse(localStorage.getItem("workData")) || [];
+    let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || [];
+    let paymentData = JSON.parse(localStorage.getItem("paymentData")) || [];
+
+    function showToast(message, type = "success") {
+      const box = document.getElementById("toastBox");
+      if (!box) return;
+
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+
+      box.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(60px)";
+        toast.style.transition = "0.3s ease";
+      }, 2200);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 2600);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    function saveAll() {
+      localStorage.setItem("staffData", JSON.stringify(staffData));
+      localStorage.setItem("workData", JSON.stringify(workData));
+      localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+      localStorage.setItem("paymentData", JSON.stringify(paymentData));
+    }
+
+    function saveStaff() {
+      const name = document.getElementById("staffName").value.trim();
+      const mobile = document.getElementById("staffMobile").value.trim();
+      const joinDate = document.getElementById("staffJoinDate").value;
+      const monthlySalary = Number(document.getElementById("staffMonthlySalary").value || 0);
+      const address = document.getElementById("staffAddress").value.trim();
+
+      if (!name) {
+        showToast("Staff name daalo", "error");
+        return;
+      }
+
+      const existingIndex = staffData.findIndex(
+        (item) => String(item.name || "").trim().toLowerCase() === name.toLowerCase()
+      );
+
+      const obj = { name, mobile, joinDate, monthlySalary, address };
+
+      if (existingIndex >= 0) {
+        staffData[existingIndex] = obj;
+      } else {
+        staffData.push(obj);
+      }
+
+      saveAll();
+      renderStaffTable();
+      loadStaffDropdowns();
+      updateStaffSummary();
+      clearStaffForm();
+      showToast("Staff saved successfully", "success");
+    }
+
+    function clearStaffForm() {
+      document.getElementById("staffName").value = "";
+      document.getElementById("staffMobile").value = "";
+      document.getElementById("staffJoinDate").value = "";
+      document.getElementById("staffMonthlySalary").value = "";
+      document.getElementById("staffAddress").value = "";
+    }
+
+    function toggleWorkMode() {
+      const status = document.getElementById("workStatus").value;
+
+      const givenIds = ["workGivenWeight", "workGivenDate", "workGivenTime"];
+      const returnIds = ["workReturnWeight", "workReturnDate", "workReturnTime"];
+
+      if (status === "GIVEN") {
+        givenIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = false;
+        });
+        returnIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.disabled = true;
+            el.value = "";
+          }
+        });
+      } else {
+        givenIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = true;
+        });
+        returnIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = false;
+        });
+      }
+    }
+
+    function saveWorkEntry() {
+      const name = document.getElementById("workStaffName").value.trim();
+      const lotNo = document.getElementById("workLotNo").value.trim();
+      const whatGiven = document.getElementById("workWhatGiven").value.trim();
+      const status = document.getElementById("workStatus").value;
+
+      const givenWeight = Number(document.getElementById("workGivenWeight").value || 0);
+      const givenDate = document.getElementById("workGivenDate").value;
+      const givenTime = document.getElementById("workGivenTime").value;
+
+      const returnWeight = Number(document.getElementById("workReturnWeight").value || 0);
+      const returnDate = document.getElementById("workReturnDate").value;
+      const returnTime = document.getElementById("workReturnTime").value;
+
+      if (!name || !lotNo || !whatGiven) {
+        showToast("Staff name, lot no aur process type daalo", "error");
+        return;
+      }
+
+      if (status === "GIVEN") {
+        if (!givenWeight || !givenDate) {
+          showToast("Given weight aur given date daalo", "error");
+          return;
+        }
+
+        workData.push({
+          id: Date.now(),
+          name,
+          lotNo,
+          whatGiven,
+          givenWeight,
+          givenDate,
+          givenTime,
+          returnWeight: 0,
+          returnDate: "",
+          returnTime: "",
+          status: "GIVEN",
+          loss: 0
+        });
+
+        saveAll();
+        renderWorkTable();
+        updateStaffSummary();
+        clearWorkForm();
+        showToast("Work given saved", "success");
+        return;
+      }
+
+      if (status === "RETURNED") {
+        if (!returnWeight || !returnDate) {
+          showToast("Return weight aur return date daalo", "error");
+          return;
+        }
+
+        const targetIndex = workData.findIndex((item) =>
+          String(item.name || "").trim() === name &&
+          String(item.lotNo || "").trim() === lotNo &&
+          String(item.whatGiven || "").trim() === whatGiven &&
+          String(item.status || "").trim() === "GIVEN"
+        );
+
+        if (targetIndex === -1) {
+          showToast("Matching GIVEN entry nahi mila", "error");
+          return;
+        }
+
+        const oldItem = workData[targetIndex];
+        const loss = Number(oldItem.givenWeight || 0) - returnWeight;
+
+        workData[targetIndex] = {
+          ...oldItem,
+          returnWeight,
+          returnDate,
+          returnTime,
+          status: "RETURNED",
+          loss
+        };
+
+        saveAll();
+        renderWorkTable();
+        updateStaffSummary();
+        clearWorkForm();
+        showToast("Returned work saved", "success");
+      }
+    }
+
+    function clearWorkForm() {
+      document.getElementById("workStaffName").value = "";
+      document.getElementById("workLotNo").value = "";
+      document.getElementById("workWhatGiven").value = "";
+      document.getElementById("workGivenWeight").value = "";
+      document.getElementById("workGivenDate").value = "";
+      document.getElementById("workGivenTime").value = "";
+      document.getElementById("workReturnWeight").value = "";
+      document.getElementById("workReturnDate").value = "";
+      document.getElementById("workReturnTime").value = "";
+      document.getElementById("workStatus").value = "GIVEN";
+      toggleWorkMode();
+    }
+
+    function saveAttendance() {
+      const name = document.getElementById("attendanceStaffName").value.trim();
+      const date = document.getElementById("attendanceDate").value;
+      const status = document.getElementById("attendanceStatus").value;
+
+      const inTime = document.getElementById("attendanceInTime").value;
+      const inAmPm = document.getElementById("attendanceInAmPm").value;
+
+      const outTime = document.getElementById("attendanceOutTime").value;
+      const outAmPm = document.getElementById("attendanceOutAmPm").value;
+
+      if (!name || !date) {
+        showToast("Staff name aur date daalo", "error");
+        return;
+      }
+
+      const existingIndex = attendanceData.findIndex((item) =>
+        String(item.name || "").trim() === name &&
+        String(item.date || "").trim() === date
+      );
+
+      if (existingIndex >= 0) {
+        const oldItem = attendanceData[existingIndex];
+
+        attendanceData[existingIndex] = {
+          ...oldItem,
+          status: status || oldItem.status || "PRESENT",
+          inTime: inTime ? (inTime + " " + inAmPm) : oldItem.inTime || "",
+          outTime: outTime ? (outTime + " " + outAmPm) : oldItem.outTime || ""
+        };
+
+        saveAll();
+        renderAttendanceTable();
+        updateStaffSummary();
+        clearAttendanceForm();
+        showToast("Attendance updated", "success");
+        return;
+      }
+
+      attendanceData.push({
+        id: Date.now(),
+        name,
+        date,
+        status,
+        inTime: inTime ? inTime + " " + inAmPm : "",
+        outTime: outTime ? outTime + " " + outAmPm : ""
+      });
+
+      saveAll();
+      renderAttendanceTable();
+      updateStaffSummary();
+      clearAttendanceForm();
+      showToast("Attendance saved", "success");
+    }
+
+    function clearAttendanceForm() {
+      document.getElementById("attendanceStaffName").value = "";
+      document.getElementById("attendanceDate").value = "";
+      document.getElementById("attendanceStatus").value = "PRESENT";
+      document.getElementById("attendanceInTime").value = "";
+      document.getElementById("attendanceOutTime").value = "";
+      document.getElementById("attendanceInAmPm").value = "AM";
+      document.getElementById("attendanceOutAmPm").value = "AM";
+    }
+
+    function savePayment() {
+      const name = document.getElementById("paymentStaffName").value.trim();
+      const date = document.getElementById("paymentDate").value;
+      const amount = Number(document.getElementById("paymentAmount").value || 0);
+      const reason = document.getElementById("paymentReason").value.trim();
+
+      if (!name || !date || amount <= 0) {
+        showToast("Staff name, date, amount sahi daalo", "error");
+        return;
+      }
+
+      paymentData.push({
+        id: Date.now(),
+        name,
+        date,
+        amount,
+        reason
+      });
+
+      saveAll();
+      renderPaymentTable();
+      updateStaffSummary();
+      clearPaymentForm();
+      showToast("Payment saved", "success");
+    }
+
+    function clearPaymentForm() {
+      document.getElementById("paymentStaffName").value = "";
+      document.getElementById("paymentDate").value = "";
+      document.getElementById("paymentAmount").value = "";
+      document.getElementById("paymentReason").value = "";
+    }
+
+    function renderStaffTable() {
+      const tbody = document.getElementById("staffTableBody");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      if (!staffData.length) {
+        tbody.innerHTML = `<tr><td colspan="5">No staff found</td></tr>`;
+        return;
+      }
+
+      staffData.forEach((item) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.name || ""}</td>
+            <td>${item.mobile || ""}</td>
+            <td>${item.joinDate || ""}</td>
+            <td>${Number(item.monthlySalary || 0).toFixed(2)}</td>
+            <td>${item.address || ""}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderWorkTable() {
+      const tbody = document.getElementById("workTableBody");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      if (!workData.length) {
+        tbody.innerHTML = `<tr><td colspan="9">No work history found</td></tr>`;
+        return;
+      }
+
+      workData.slice().reverse().forEach((item) => {
+        const lossClass = Number(item.loss || 0) > 0 ? "loss-red" : "";
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.name || ""}</td>
+            <td>${item.lotNo || ""}</td>
+            <td>${item.whatGiven || ""}</td>
+            <td>${Number(item.givenWeight || 0).toFixed(3)}</td>
+            <td>${Number(item.returnWeight || 0).toFixed(3)}</td>
+            <td class="${lossClass}">${Number(item.loss || 0).toFixed(3)}</td>
+            <td>${item.givenDate || ""} ${item.givenTime || ""}</td>
+            <td>${item.returnDate || ""} ${item.returnTime || ""}</td>
+            <td>${item.status || ""}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderAttendanceTable() {
+      const tbody = document.getElementById("attendanceTableBody");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      if (!attendanceData.length) {
+        tbody.innerHTML = `<tr><td colspan="5">No attendance found</td></tr>`;
+        return;
+      }
+
+      attendanceData.slice().reverse().forEach((item) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.name || ""}</td>
+            <td>${item.date || ""}</td>
+            <td>${item.status || ""}</td>
+            <td>${item.inTime || ""}</td>
+            <td>${item.outTime || ""}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderPaymentTable() {
+      const tbody = document.getElementById("paymentTableBody");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      if (!paymentData.length) {
+        tbody.innerHTML = `<tr><td colspan="4">No payment history found</td></tr>`;
+        return;
+      }
+
+      paymentData.slice().reverse().forEach((item) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.name || ""}</td>
+            <td>${item.date || ""}</td>
+            <td>${Number(item.amount || 0).toFixed(2)}</td>
+            <td>${item.reason || ""}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function loadStaffDropdowns() {
+      const filter = document.getElementById("attendanceFilterName");
+if (filter) {
+  filter.innerHTML = '<option value="">Select Staff</option>';
+  staffData.forEach(s => {
+    filter.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+  });
+}
+      const ids = ["workStaffName", "attendanceStaffName", "paymentStaffName", "summaryStaffName"];
+
+      ids.forEach((id) => {
+        const select = document.getElementById(id);
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Select Staff</option>';
+
+        staffData.forEach((staff) => {
+          select.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+
+        });
+      });
+    }
+
+    function updateStaffSummary() {
+      const selected = document.getElementById("summaryStaffName")?.value?.trim() || "";
+      const selectedMonth = document.getElementById("summaryMonth")?.value || "";
+
+      if (!selected) {
+        document.getElementById("sumSalary").textContent = "Monthly Salary: 0";
+        document.getElementById("sumAdvance").textContent = "Total Advance: 0";
+        document.getElementById("sumBalance").textContent = "Balance Salary: 0";
+        document.getElementById("sumLoss").textContent = "Total Loss: 0";
+        document.getElementById("sumGiven").textContent = "Total Given Weight: 0";
+        document.getElementById("sumReturned").textContent = "Total Returned Weight: 0";
+        document.getElementById("sumPresent").textContent = "Present Days: 0";
+        document.getElementById("sumAbsent").textContent = "Absent Days: 0";
+        document.getElementById("sumHalfDay").textContent = "Half Days: 0";
+        return;
+      }
+
+      const staff = staffData.find(
+        (item) => String(item.name || "").trim() === selected
+      );
+
+      function isSameMonth(dateStr) {
+        if (!selectedMonth) return true;
+        if (!dateStr) return false;
+        return String(dateStr).startsWith(selectedMonth);
+      }
+
+      const totalAdvance = paymentData
+        .filter((item) =>
+          String(item.name || "").trim() === selected &&
+          isSameMonth(item.date)
+        )
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const selectedWork = workData.filter(
+        (item) =>
+          String(item.name || "").trim() === selected &&
+          isSameMonth(item.givenDate)
+      );
+
+      const totalGiven = selectedWork.reduce((sum, item) => sum + Number(item.givenWeight || 0), 0);
+      const totalReturned = selectedWork.reduce((sum, item) => sum + Number(item.returnWeight || 0), 0);
+      const totalLoss = selectedWork.reduce((sum, item) => sum + Number(item.loss || 0), 0);
+
+      const selectedAttendance = attendanceData.filter(
+        (item) =>
+          String(item.name || "").trim() === selected &&
+          isSameMonth(item.date)
+      );
+
+      const presentDays = selectedAttendance.filter((item) => item.status === "PRESENT").length;
+      const absentDays = selectedAttendance.filter((item) => item.status === "ABSENT").length;
+      const halfDays = selectedAttendance.filter((item) => item.status === "HALF DAY").length;
+
+      const monthlySalary = Number(staff?.monthlySalary || 0);
+      const balanceSalary = monthlySalary - totalAdvance;
+
+      document.getElementById("sumSalary").textContent = "Monthly Salary: " + monthlySalary.toFixed(2);
+      document.getElementById("sumAdvance").textContent = "Total Advance: " + totalAdvance.toFixed(2);
+      document.getElementById("sumBalance").textContent = "Balance Salary: " + balanceSalary.toFixed(2);
+      document.getElementById("sumLoss").textContent = "Total Loss: " + totalLoss.toFixed(3);
+      document.getElementById("sumGiven").textContent = "Total Given Weight: " + totalGiven.toFixed(3);
+      document.getElementById("sumReturned").textContent = "Total Returned Weight: " + totalReturned.toFixed(3);
+      document.getElementById("sumPresent").textContent = "Present Days: " + presentDays;
+      document.getElementById("sumAbsent").textContent = "Absent Days: " + absentDays;
+      document.getElementById("sumHalfDay").textContent = "Half Days: " + halfDays;
+    }
+function filterAttendance() {
+  const name = document.getElementById("attendanceFilterName").value;
+  const month = document.getElementById("attendanceFilterMonth").value;
+
+  if (!name) {
+    showToast("Staff select karo", "error");
+    return;
+  }
+
+  function isSameMonth(dateStr) {
+    if (!month) return true;
+    return String(dateStr || "").startsWith(month);
+  }
+
+  const filtered = attendanceData.filter(item =>
+    String(item.name || "").trim() === name &&
+    isSameMonth(item.date)
+  );
+
+  const tbody = document.getElementById("attendanceTableBody");
+  tbody.innerHTML = "";
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5">No record found</td></tr>`;
+  } else {
+    filtered.forEach(item => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.date}</td>
+          <td>${item.status}</td>
+          <td>${item.inTime || ""}</td>
+          <td>${item.outTime || ""}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // SHOW TABLE
+  tbody.style.display = "";
+
+  // SUMMARY
+  const present = filtered.filter(i => i.status === "PRESENT").length;
+  const absent = filtered.filter(i => i.status === "ABSENT").length;
+  const half = filtered.filter(i => i.status === "HALF DAY").length;
+
+  document.getElementById("attSumPresent").textContent = "Present: " + present;
+  document.getElementById("attSumAbsent").textContent = "Absent: " + absent;
+  document.getElementById("attSumHalf").textContent = "Half Day: " + half;
+
+  document.getElementById("attendanceSummaryBox").style.display = "block";
+}
+function clearAttendanceFilter() {
+  document.getElementById("attendanceFilterName").value = "";
+  document.getElementById("attendanceFilterMonth").value = "";
+
+  const tbody = document.getElementById("attendanceTableBody");
+  tbody.style.display = "none";
+  tbody.innerHTML = "";
+
+  document.getElementById("attendanceSummaryBox").style.display = "none";
+}
+    document.getElementById("summaryMonth")?.addEventListener("change", updateStaffSummary);
+    document.getElementById("summaryStaffName")?.addEventListener("change", updateStaffSummary);
+
+    window.addEventListener("load", function () {
+      renderStaffTable();
+      renderWorkTable();
+      renderAttendanceTable();
+      renderPaymentTable();
+      loadStaffDropdowns();
+      toggleWorkMode();
+
+      const monthInput = document.getElementById("summaryMonth");
+      if (monthInput) {
+        const today = new Date();
+        const currentMonth =
+          today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
+        monthInput.value = currentMonth;
+      }
+
+      updateStaffSummary();
+    });
+  </script>
+</body>
+</html>

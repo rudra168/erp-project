@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Process</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    .process-two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      align-items: start;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .process-two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .custom-toast {
+      min-width: 280px;
+      max-width: 380px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+      border-left: 5px solid #c58b2b;
+      padding: 14px 16px;
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.35s ease;
+      pointer-events: auto;
+      overflow: hidden;
+    }
+
+    .custom-toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .custom-toast.success {
+      border-left-color: #16a34a;
+    }
+
+    .custom-toast.error {
+      border-left-color: #dc2626;
+    }
+
+    .custom-toast.info {
+      border-left-color: #2563eb;
+    }
+
+    .custom-toast-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .custom-toast-message {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .custom-toast.success .custom-toast-title {
+      color: #166534;
+    }
+
+    .custom-toast.error .custom-toast-title {
+      color: #991b1b;
+    }
+
+    .custom-toast.info .custom-toast-title {
+      color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+
+      <ul class="menu">
+  <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+  <li><a href="process.html" class="active"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+  <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+  <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+  <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+</ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>ERP Dashboard Template</p>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <select>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Yearly</option>
+          </select>
+          <button type="button" onclick="window.print()">Print</button>
+          <div class="profile-box"></div>
+        </div>
+      </div>
+
+      <section class="page active">
+        <div class="section-box">
+          <h2>Process</h2>
+          <p>Yahan lot, raw weight, loss, karigar work aur process summary manage hoga.</p>
+
+          <!-- ROW 1 -->
+          <div class="process-two-col">
+            <!-- PROCESS ENTRY -->
+            <div class="sub-card">
+              <h3>Process Entry</h3>
+
+              <div class="form-grid">
+                <div class="input-box">
+                  <label for="processLotNo">Lot No</label>
+                  <input id="processLotNo" type="text" placeholder="Enter Lot No" />
+                </div>
+
+                <div class="input-box">
+                  <label for="processRawWeight">Raw Weight</label>
+                  <input id="processRawWeight" type="number" step="0.001" placeholder="Enter Raw Weight" />
+                </div>
+
+                <div class="input-box">
+                  <label for="processLossWeight">Loss Weight</label>
+                  <input id="processLossWeight" type="number" step="0.001" placeholder="Enter Loss Weight" />
+                </div>
+
+                <div class="input-box">
+                  <label for="processFinalWeight">Final Weight</label>
+                  <input id="processFinalWeight" type="number" step="0.001" readonly />
+                </div>
+
+                <div class="input-box">
+                  <label for="processUsedWeight">Used Weight</label>
+                  <input id="processUsedWeight" type="number" step="0.001" readonly />
+                </div>
+
+                <div class="input-box">
+                  <label for="processBalanceWeight">Balance Weight</label>
+                  <input id="processBalanceWeight" type="number" step="0.001" readonly />
+                </div>
+              </div>
+
+              <div class="btn-row" style="margin-top:12px;">
+                <button class="primary-btn" type="button" onclick="saveProcessLot()">Save Process</button>
+                <button class="secondary-btn" type="button" onclick="clearProcessForm()">Clear</button>
+              </div>
+
+              <div id="processSummary" class="summary" style="margin-top: 16px;">
+                <h3>Summary</h3>
+                <p>Raw: 0 | Loss: 0 | Final: 0 | Used: 0 | Balance: 0</p>
+              </div>
+            </div>
+
+            <!-- SAVED PROCESS LOTS -->
+            <div class="sub-card">
+              <h3>Saved Process Lots</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lot No</th>
+                    <th>Raw Weight</th>
+                    <th>Loss Weight</th>
+                    <th>Final Weight</th>
+                    <th>Used Weight</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="processTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ROW 2 -->
+          <div class="process-two-col">
+            <!-- KARIGAR ENTRY -->
+            <div class="sub-card">
+              <h3>Karigar Work Entry</h3>
+
+              <div class="form-grid">
+                <div class="input-box">
+                  <label for="karigarName">Karigar Name</label>
+                  <input id="karigarName" type="text" placeholder="Karigar Name" />
+                </div>
+
+                <div class="input-box">
+                  <label for="karigarLot">Lot No</label>
+                  <select id="karigarLot"></select>
+                </div>
+
+                <div class="input-box">
+                  <label for="karigarGivenWeight">Given Weight</label>
+                  <input id="karigarGivenWeight" type="number" step="0.001" placeholder="Given Weight" />
+                </div>
+
+                <div class="input-box">
+                  <label for="karigarReturnWeight">Return Weight</label>
+                  <input id="karigarReturnWeight" type="number" step="0.001" placeholder="Return Weight" />
+                </div>
+              </div>
+
+              <div class="btn-row" style="margin-top:12px;">
+                <button class="primary-btn" type="button" onclick="saveKarigarWork()">Save Work</button>
+                <button class="secondary-btn" type="button" onclick="clearKarigarForm()">Clear</button>
+              </div>
+
+              <div id="karigarList" style="margin-top: 14px;"></div>
+            </div>
+
+            <!-- KARIGAR LOSS REPORT -->
+            <div class="sub-card">
+              <h3>Karigar Loss Report</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Karigar</th>
+                    <th>Total Given</th>
+                    <th>Total Returned</th>
+                    <th>Total Loss</th>
+                  </tr>
+                </thead>
+                <tbody id="karigarLossReportBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    let stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
+    let lotData = JSON.parse(localStorage.getItem("lotData")) || [];
+    let karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+
+    function showToast(message, type = "info", title = "") {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      toast.className = `custom-toast ${type}`;
+
+      let toastTitle = title;
+      if (!toastTitle) {
+        if (type === "success") toastTitle = "Success";
+        else if (type === "error") toastTitle = "Error";
+        else toastTitle = "Notice";
+      }
+
+      toast.innerHTML = `
+        <div class="custom-toast-title">${toastTitle}</div>
+        <div class="custom-toast-message">${message}</div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add("show");
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => {
+          toast.remove();
+        }, 350);
+      }, 2600);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    function getUsedWeightByLot(lotNo) {
+      return stockItems
+        .filter((item) => {
+          const itemLot = String(item.lot_number || item.lot || "").trim();
+          const status = String(item.status || "IN_STOCK").toUpperCase();
+          return itemLot === String(lotNo || "").trim() && status === "IN_STOCK";
+        })
+        .reduce((sum, item) => sum + Number(item.weight || 0), 0);
+    }
+
+    function updateProcessCalculations() {
+      const lotNo = document.getElementById("processLotNo")?.value?.trim() || "";
+      const raw = Number(document.getElementById("processRawWeight")?.value || 0);
+      const loss = Number(document.getElementById("processLossWeight")?.value || 0);
+      const finalWeight = raw - loss;
+      const used = getUsedWeightByLot(lotNo);
+      const balance = finalWeight - used;
+
+      document.getElementById("processFinalWeight").value = finalWeight.toFixed(3);
+      document.getElementById("processUsedWeight").value = used.toFixed(3);
+      document.getElementById("processBalanceWeight").value = balance.toFixed(3);
+
+      const summary = document.getElementById("processSummary");
+      if (summary) {
+        summary.innerHTML = `
+          <h3>Summary</h3>
+          <p>Raw: ${raw.toFixed(3)} | Loss: ${loss.toFixed(3)} | Final: ${finalWeight.toFixed(3)} | Used: ${used.toFixed(3)} | Balance: ${balance.toFixed(3)}</p>
+        `;
+      }
+    }
+
+    function saveProcessLot() {
+      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
+
+      const lotNo = document.getElementById("processLotNo")?.value?.trim() || "";
+      const raw = Number(document.getElementById("processRawWeight")?.value || 0);
+      const loss = Number(document.getElementById("processLossWeight")?.value || 0);
+      const finalWeight = raw - loss;
+      const used = getUsedWeightByLot(lotNo);
+      const balance = finalWeight - used;
+
+      if (!lotNo) {
+        showToast("Lot No daalo", "error", "Missing Field");
+        return;
+      }
+
+      const existingIndex = lotData.findIndex(
+        (item) => String(item.lotNo || "").trim() === lotNo
+      );
+
+      const lotObj = {
+        lotNo,
+        rawWeight: raw,
+        lossWeight: loss,
+        finalWeight,
+        usedWeight: used,
+        balanceWeight: balance,
+        savedAt: new Date().toLocaleString()
+      };
+
+      if (existingIndex >= 0) {
+        lotData[existingIndex] = lotObj;
+      } else {
+        lotData.push(lotObj);
+      }
+
+      localStorage.setItem("lotData", JSON.stringify(lotData));
+
+      renderProcessTable();
+      loadKarigarLotDropdown();
+      updateProcessCalculations();
+      clearProcessForm();
+
+      showToast("Process saved successfully", "success", "Saved");
+    }
+
+    function clearProcessForm() {
+      document.getElementById("processLotNo").value = "";
+      document.getElementById("processRawWeight").value = "";
+      document.getElementById("processLossWeight").value = "";
+      document.getElementById("processFinalWeight").value = "";
+      document.getElementById("processUsedWeight").value = "";
+      document.getElementById("processBalanceWeight").value = "";
+
+      const summary = document.getElementById("processSummary");
+      if (summary) {
+        summary.innerHTML = `
+          <h3>Summary</h3>
+          <p>Raw: 0 | Loss: 0 | Final: 0 | Used: 0 | Balance: 0</p>
+        `;
+      }
+    }
+
+    function renderProcessTable() {
+      const tbody = document.getElementById("processTableBody");
+      if (!tbody) return;
+
+      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
+      stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
+
+      tbody.innerHTML = "";
+
+      if (!lotData.length) {
+        tbody.innerHTML = `<tr><td colspan="6">No process lots found</td></tr>`;
+        return;
+      }
+
+      lotData.forEach((lot) => {
+        const used = getUsedWeightByLot(lot.lotNo);
+        const balance = Number(lot.finalWeight || 0) - used;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${lot.lotNo || ""}</td>
+            <td>${Number(lot.rawWeight || 0).toFixed(3)}</td>
+            <td>${Number(lot.lossWeight || 0).toFixed(3)}</td>
+            <td>${Number(lot.finalWeight || 0).toFixed(3)}</td>
+            <td>${used.toFixed(3)}</td>
+            <td>${balance.toFixed(3)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function loadKarigarLotDropdown() {
+      const lotSelect = document.getElementById("karigarLot");
+      if (!lotSelect) return;
+
+      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
+      lotSelect.innerHTML = '<option value="">Select Lot</option>';
+
+      lotData.forEach((lot) => {
+        lotSelect.innerHTML += `<option value="${lot.lotNo}">${lot.lotNo}</option>`;
+      });
+    }
+
+    function saveKarigarWork() {
+      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+
+      const name = document.getElementById("karigarName")?.value?.trim() || "";
+      const lot = document.getElementById("karigarLot")?.value?.trim() || "";
+      const given = Number(document.getElementById("karigarGivenWeight")?.value || 0);
+      const returned = Number(document.getElementById("karigarReturnWeight")?.value || 0);
+
+      if (!name || !lot) {
+        showToast("Karigar name aur lot select karo", "error", "Missing Field");
+        return;
+      }
+
+      if (given <= 0) {
+        showToast("Given weight sahi daalo", "error", "Invalid Weight");
+        return;
+      }
+
+      const loss = given - returned;
+
+      const work = {
+        id: Date.now(),
+        name,
+        lot,
+        given,
+        returned,
+        loss,
+        time: new Date().toLocaleString()
+      };
+
+      karigarData.push(work);
+      localStorage.setItem("karigarData", JSON.stringify(karigarData));
+
+      renderKarigarList();
+      renderKarigarLossReport();
+      clearKarigarForm();
+
+      showToast("Karigar work saved successfully", "success", "Saved");
+    }
+
+    function clearKarigarForm() {
+      document.getElementById("karigarName").value = "";
+      document.getElementById("karigarLot").value = "";
+      document.getElementById("karigarGivenWeight").value = "";
+      document.getElementById("karigarReturnWeight").value = "";
+    }
+
+    function renderKarigarList() {
+      const box = document.getElementById("karigarList");
+      if (!box) return;
+
+      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+      box.innerHTML = "";
+
+      if (!karigarData.length) {
+        box.innerHTML = `<p style="margin-top:10px;">No karigar work found</p>`;
+        return;
+      }
+
+      karigarData
+        .slice()
+        .reverse()
+        .forEach((item) => {
+          box.innerHTML += `
+            <div class="sub-card" style="margin-top:10px; padding:12px;">
+              <b>${item.name}</b> | Lot: ${item.lot}<br>
+              Given: ${Number(item.given || 0).toFixed(3)}g | Return: ${Number(item.returned || 0).toFixed(3)}g<br>
+              Loss: ${Number(item.loss || 0).toFixed(3)}g<br>
+              Time: ${item.time || ""}
+            </div>
+          `;
+        });
+    }
+
+    function renderKarigarLossReport() {
+      const tbody = document.getElementById("karigarLossReportBody");
+      if (!tbody) return;
+
+      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+      tbody.innerHTML = "";
+
+      if (!karigarData.length) {
+        tbody.innerHTML = `<tr><td colspan="4">No karigar loss data found</td></tr>`;
+        return;
+      }
+
+      const reportMap = {};
+
+      karigarData.forEach((item) => {
+        const name = item.name || "Unknown";
+
+        if (!reportMap[name]) {
+          reportMap[name] = {
+            given: 0,
+            returned: 0,
+            loss: 0
+          };
+        }
+
+        reportMap[name].given += Number(item.given || 0);
+        reportMap[name].returned += Number(item.returned || 0);
+        reportMap[name].loss += Number(item.loss || 0);
+      });
+
+      Object.keys(reportMap).forEach((name) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${name}</td>
+            <td>${reportMap[name].given.toFixed(3)}</td>
+            <td>${reportMap[name].returned.toFixed(3)}</td>
+            <td>${reportMap[name].loss.toFixed(3)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    document.getElementById("processLotNo")?.addEventListener("input", updateProcessCalculations);
+    document.getElementById("processRawWeight")?.addEventListener("input", updateProcessCalculations);
+    document.getElementById("processLossWeight")?.addEventListener("input", updateProcessCalculations);
+
+    window.addEventListener("load", function () {
+      stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
+      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
+      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+
+      renderProcessTable();
+      loadKarigarLotDropdown();
+      renderKarigarList();
+      renderKarigarLossReport();
+      updateProcessCalculations();
+    });
+  </script>
+</body>
+</html>
