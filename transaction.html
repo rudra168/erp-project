@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transaction</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    .txn-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .type-switch {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .type-btn {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #111827;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .type-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+
+    .mini-row {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .mini-row .input-box {
+      flex: 1;
+    }
+
+    .ledger-badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .badge-red {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-green {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-gray {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .history-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      min-width: 260px;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      animation: slideInToast 0.25s ease;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+    }
+
+    .toast.info {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+
+    @keyframes slideInToast {
+      from {
+        opacity: 0;
+        transform: translateX(80px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .txn-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+
+      <ul class="menu">
+  <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+  <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+  <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+  <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+  <li><a href="transaction.html" class="active"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+</ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>ERP Dashboard Template</p>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <select>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Yearly</option>
+          </select>
+          <button type="button" onclick="window.print()">Print</button>
+          <div class="profile-box"></div>
+        </div>
+      </div>
+
+      <section class="page active">
+        <div class="section-box">
+          <h2>Transaction Hub</h2>
+          <p>Manage sale, purchase, and payment transactions with live ledger and history.</p>
+
+          <div class="txn-grid">
+            <div class="sub-card">
+              <h3>Add Transaction</h3>
+
+              <input type="hidden" id="txnEditId" />
+              <input type="hidden" id="txnType" value="Sale" />
+
+              <div class="form-grid">
+                <div class="input-box">
+                  <label>Customer</label>
+                  <select id="txnCustomer"></select>
+                </div>
+
+                <div class="input-box">
+                  <label>Type</label>
+                  <div class="type-switch">
+                    <button type="button" class="type-btn active" id="btnSale" onclick="setTxnType('Sale')">Sale</button>
+                    <button type="button" class="type-btn" id="btnPurchase" onclick="setTxnType('Purchase')">Purchase</button>
+                    <button type="button" class="type-btn" id="btnPayment" onclick="setTxnType('Payment')">Payment</button>
+                  </div>
+                </div>
+
+                <div class="input-box">
+                  <label>Item Name</label>
+                  <select id="txnItemName">
+                    <option value="">All</option>
+                  </select>
+                </div>
+
+                <div class="input-box">
+                  <label>Metal Type</label>
+                  <input type="text" id="txnMetalType" placeholder="gold / silver" />
+                </div>
+
+                <div class="mini-row" style="grid-column: 1 / -1;">
+                  <div class="input-box">
+                    <label>New Item Name</label>
+                    <input type="text" id="newTxnItemName" placeholder="New item name" />
+                  </div>
+                  <button type="button" class="secondary-btn" onclick="addTxnItemName()">Add Item Name</button>
+                </div>
+
+                <div class="input-box">
+                  <label>Quantity</label>
+                  <input type="number" id="txnQty" placeholder="1" />
+                </div>
+
+                <div class="input-box">
+                  <label>Gross Weight (gm)</label>
+                  <input type="number" id="txnGrossWeight" step="0.001" placeholder="0" />
+                </div>
+
+                <div class="input-box">
+                  <label>Fine + Wastage (%)</label>
+                  <input type="number" id="txnFineWastage" placeholder="0" />
+                </div>
+
+                <div class="input-box">
+                  <label>Metal Price (Rs/gm)</label>
+                  <input type="number" id="txnMetalPrice" placeholder="0" />
+                </div>
+
+                <div class="input-box">
+                  <label>M.C (Rs/gm)</label>
+                  <input type="number" id="txnMc" placeholder="0" />
+                </div>
+
+                <div class="input-box">
+                  <label>HM / Fluid (Rs/gm)</label>
+                  <input type="number" id="txnHmFluid" placeholder="0" />
+                </div>
+
+                <div class="input-box">
+                  <label>Transaction Mode</label>
+                  <select id="txnMode">
+                    <option value="">Select Mode</option>
+                    <option value="Credit">Credit</option>
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank">Bank</option>
+                  </select>
+                </div>
+
+                <div class="input-box">
+                  <label>Date</label>
+                  <input type="date" id="txnDate" />
+                </div>
+
+                <div class="input-box">
+                  <label>Time</label>
+                  <input type="time" id="txnTime" />
+                </div>
+
+                <div class="input-box">
+                  <label>Amount</label>
+                  <input type="number" id="txnAmount" placeholder="Auto / Manual amount" />
+                </div>
+
+                <div class="input-box" style="grid-column: 1 / -1;">
+                  <label>Note</label>
+                  <input type="text" id="txnNote" placeholder="Extra note..." />
+                </div>
+              </div>
+
+              <div class="btn-row" style="margin-top: 12px;">
+                <button type="button" class="primary-btn" onclick="saveTransaction()">Submit Transaction</button>
+                <button type="button" class="secondary-btn" onclick="clearTransactionForm()">Clear</button>
+              </div>
+            </div>
+
+            <div class="sub-card">
+              <h3>Ledger</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Party Name</th>
+                    <th>Metal Receivable</th>
+                    <th>Metal Payable</th>
+                    <th>Cash Receivable</th>
+                    <th>Cash Payable</th>
+                  </tr>
+                </thead>
+                <tbody id="txnLedgerBody">
+                  <tr>
+                    <td colspan="5">No ledger data available</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Transaction History</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Item</th>
+                  <th>Metal</th>
+                  <th>Qty</th>
+                  <th>Weight</th>
+                  <th>Mode</th>
+                  <th>Amount</th>
+                  <th>Note</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="txnHistoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastBox" class="toast-box"></div>
+
+  <script>
+    let transactionData = JSON.parse(localStorage.getItem("transactionData")) || [];
+    let transactionCustomers = JSON.parse(localStorage.getItem("transactionCustomers")) || [];
+    let transactionItems = JSON.parse(localStorage.getItem("transactionItems")) || [];
+
+    function showToast(message, type = "success") {
+      const box = document.getElementById("toastBox");
+      if (!box) return;
+
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+
+      box.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(60px)";
+        toast.style.transition = "0.3s ease";
+      }, 2200);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 2600);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    function saveTransactionData() {
+      localStorage.setItem("transactionData", JSON.stringify(transactionData));
+      localStorage.setItem("transactionCustomers", JSON.stringify(transactionCustomers));
+      localStorage.setItem("transactionItems", JSON.stringify(transactionItems));
+    }
+
+    function setTxnType(type) {
+      document.getElementById("txnType").value = type;
+
+      document.getElementById("btnSale").classList.remove("active");
+      document.getElementById("btnPurchase").classList.remove("active");
+      document.getElementById("btnPayment").classList.remove("active");
+
+      if (type === "Sale") document.getElementById("btnSale").classList.add("active");
+      if (type === "Purchase") document.getElementById("btnPurchase").classList.add("active");
+      if (type === "Payment") document.getElementById("btnPayment").classList.add("active");
+    }
+
+    function loadTxnCustomers() {
+      const select = document.getElementById("txnCustomer");
+      if (!select) return;
+
+      const sourceNames = [
+        ...transactionCustomers,
+        ...JSON.parse(localStorage.getItem("customerData") || "[]").map(c => c.name || ""),
+        ...JSON.parse(localStorage.getItem("expenseData") || "[]").map(e => e.person || "")
+      ];
+
+      const names = [...new Set(sourceNames.map(x => String(x || "").trim()).filter(Boolean))];
+
+      transactionCustomers = names;
+      localStorage.setItem("transactionCustomers", JSON.stringify(transactionCustomers));
+
+      const oldValue = select.value || "";
+      select.innerHTML = '<option value="">Select Customer</option>';
+
+      names.forEach(name => {
+        select.innerHTML += `<option value="${name}">${name}</option>`;
+      });
+
+      if ([...select.options].some(opt => opt.value === oldValue)) {
+        select.value = oldValue;
+      }
+    }
+
+    function loadTxnItems() {
+      const select = document.getElementById("txnItemName");
+      if (!select) return;
+
+      const stockItems = JSON.parse(localStorage.getItem("stockItems") || "[]");
+      const stockNames = stockItems.map(item => item.productName || item.product_name || item.itemName || "");
+
+      const items = [...new Set([...transactionItems, ...stockNames].map(x => String(x || "").trim()).filter(Boolean))];
+      transactionItems = items;
+      localStorage.setItem("transactionItems", JSON.stringify(transactionItems));
+
+      const oldValue = select.value || "";
+      select.innerHTML = '<option value="">All</option>';
+
+      items.forEach(item => {
+        select.innerHTML += `<option value="${item}">${item}</option>`;
+      });
+
+      if ([...select.options].some(opt => opt.value === oldValue)) {
+        select.value = oldValue;
+      }
+    }
+
+    function addTxnItemName() {
+      const input = document.getElementById("newTxnItemName");
+      const name = String(input?.value || "").trim();
+
+      if (!name) {
+        showToast("New item name daalo", "error");
+        return;
+      }
+
+      if (!transactionItems.includes(name)) {
+        transactionItems.push(name);
+        localStorage.setItem("transactionItems", JSON.stringify(transactionItems));
+      }
+
+      loadTxnItems();
+      document.getElementById("txnItemName").value = name;
+      input.value = "";
+      showToast("Item name added", "success");
+    }
+
+    function clearTransactionForm() {
+      document.getElementById("txnEditId").value = "";
+      document.getElementById("txnCustomer").value = "";
+      document.getElementById("txnItemName").value = "";
+      document.getElementById("txnMetalType").value = "";
+      document.getElementById("newTxnItemName").value = "";
+      document.getElementById("txnQty").value = "";
+      document.getElementById("txnGrossWeight").value = "";
+      document.getElementById("txnFineWastage").value = "";
+      document.getElementById("txnMetalPrice").value = "";
+      document.getElementById("txnMc").value = "";
+      document.getElementById("txnHmFluid").value = "";
+      document.getElementById("txnMode").value = "";
+      document.getElementById("txnAmount").value = "";
+      document.getElementById("txnNote").value = "";
+
+      setTxnType("Sale");
+
+      const today = new Date();
+      document.getElementById("txnDate").value = today.toISOString().split("T")[0];
+      document.getElementById("txnTime").value =
+        String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
+    }
+
+    function calculateTxnAmount() {
+      const weight = Number(document.getElementById("txnGrossWeight")?.value || 0);
+      const metalPrice = Number(document.getElementById("txnMetalPrice")?.value || 0);
+      const mc = Number(document.getElementById("txnMc")?.value || 0);
+      const hm = Number(document.getElementById("txnHmFluid")?.value || 0);
+
+      const amount = (weight * metalPrice) + (weight * mc) + (weight * hm);
+
+      if (!document.getElementById("txnAmount").value) {
+        document.getElementById("txnAmount").value = amount > 0 ? amount.toFixed(2) : "";
+      }
+    }
+
+    function saveTransaction() {
+      const editId = document.getElementById("txnEditId").value;
+      const customer = document.getElementById("txnCustomer").value.trim();
+      const type = document.getElementById("txnType").value;
+      const itemName = document.getElementById("txnItemName").value.trim();
+      const metalType = document.getElementById("txnMetalType").value.trim();
+      const qty = Number(document.getElementById("txnQty").value || 0);
+      const grossWeight = Number(document.getElementById("txnGrossWeight").value || 0);
+      const fineWastage = Number(document.getElementById("txnFineWastage").value || 0);
+      const metalPrice = Number(document.getElementById("txnMetalPrice").value || 0);
+      const mc = Number(document.getElementById("txnMc").value || 0);
+      const hmFluid = Number(document.getElementById("txnHmFluid").value || 0);
+      const mode = document.getElementById("txnMode").value;
+      const date = document.getElementById("txnDate").value;
+      const time = document.getElementById("txnTime").value;
+      const note = document.getElementById("txnNote").value.trim();
+
+      let amount = Number(document.getElementById("txnAmount").value || 0);
+      if (amount <= 0) {
+        amount = (grossWeight * metalPrice) + (grossWeight * mc) + (grossWeight * hmFluid);
+      }
+
+      if (!customer || !type || !date) {
+        showToast("Customer, type aur date daalo", "error");
+        return;
+      }
+
+      const obj = {
+        id: editId ? Number(editId) : Date.now(),
+        customer,
+        type,
+        itemName,
+        metalType,
+        qty,
+        grossWeight,
+        fineWastage,
+        metalPrice,
+        mc,
+        hmFluid,
+        mode,
+        date,
+        time,
+        amount,
+        note
+      };
+
+      if (editId) {
+        const index = transactionData.findIndex(item => Number(item.id) === Number(editId));
+        if (index >= 0) transactionData[index] = obj;
+      } else {
+        transactionData.push(obj);
+      }
+
+      if (customer && !transactionCustomers.includes(customer)) {
+        transactionCustomers.push(customer);
+      }
+
+      if (itemName && !transactionItems.includes(itemName)) {
+        transactionItems.push(itemName);
+      }
+
+      saveTransactionData();
+      loadTxnCustomers();
+      loadTxnItems();
+      renderTransactionHistory();
+      renderLedger();
+      clearTransactionForm();
+
+      showToast(editId ? "Transaction updated successfully" : "Transaction saved successfully", "success");
+    }
+
+    function editTransaction(id) {
+      const item = transactionData.find(t => Number(t.id) === Number(id));
+      if (!item) return;
+
+      document.getElementById("txnEditId").value = item.id || "";
+      document.getElementById("txnCustomer").value = item.customer || "";
+      document.getElementById("txnItemName").value = item.itemName || "";
+      document.getElementById("txnMetalType").value = item.metalType || "";
+      document.getElementById("txnQty").value = item.qty || "";
+      document.getElementById("txnGrossWeight").value = item.grossWeight || "";
+      document.getElementById("txnFineWastage").value = item.fineWastage || "";
+      document.getElementById("txnMetalPrice").value = item.metalPrice || "";
+      document.getElementById("txnMc").value = item.mc || "";
+      document.getElementById("txnHmFluid").value = item.hmFluid || "";
+      document.getElementById("txnMode").value = item.mode || "";
+      document.getElementById("txnDate").value = item.date || "";
+      document.getElementById("txnTime").value = item.time || "";
+      document.getElementById("txnAmount").value = item.amount || "";
+      document.getElementById("txnNote").value = item.note || "";
+      setTxnType(item.type || "Sale");
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      showToast("Edit mode on", "info");
+    }
+
+    function deleteTransaction(id) {
+      const ok = confirm("Ye transaction delete karna hai?");
+      if (!ok) return;
+
+      transactionData = transactionData.filter(item => Number(item.id) !== Number(id));
+      saveTransactionData();
+      renderTransactionHistory();
+      renderLedger();
+      showToast("Transaction deleted successfully", "success");
+    }
+
+    function renderTransactionHistory() {
+      const tbody = document.getElementById("txnHistoryBody");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      if (!transactionData.length) {
+        tbody.innerHTML = `<tr><td colspan="12">No transaction history available</td></tr>`;
+        return;
+      }
+
+      transactionData
+        .slice()
+        .reverse()
+        .forEach(item => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${item.date || ""}</td>
+              <td>${item.time || ""}</td>
+              <td>${item.customer || ""}</td>
+              <td>${item.type || ""}</td>
+              <td>${item.itemName || ""}</td>
+              <td>${item.metalType || ""}</td>
+              <td>${item.qty || ""}</td>
+              <td>${Number(item.grossWeight || 0).toFixed(3)}</td>
+              <td>${item.mode || ""}</td>
+              <td>${Number(item.amount || 0).toFixed(2)}</td>
+              <td>${item.note || ""}</td>
+              <td>
+                <div class="history-actions">
+                  <button type="button" class="primary-btn" onclick="editTransaction(${item.id})">Edit</button>
+                  <button type="button" class="secondary-btn" onclick="deleteTransaction(${item.id})">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+    }
+
+    function renderLedger() {
+      const tbody = document.getElementById("txnLedgerBody");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      if (!transactionData.length) {
+        tbody.innerHTML = `<tr><td colspan="5">No ledger data available</td></tr>`;
+        return;
+      }
+
+      const ledgerMap = {};
+
+      transactionData.forEach(item => {
+        const name = String(item.customer || "").trim();
+        if (!name) return;
+
+        if (!ledgerMap[name]) {
+          ledgerMap[name] = {
+            metalReceivable: 0,
+            metalPayable: 0,
+            cashReceivable: 0,
+            cashPayable: 0
+          };
+        }
+
+        const weight = Number(item.grossWeight || 0);
+        const amount = Number(item.amount || 0);
+
+        if (item.type === "Sale") {
+          ledgerMap[name].cashReceivable += amount;
+          ledgerMap[name].metalPayable += weight;
+        } else if (item.type === "Purchase") {
+          ledgerMap[name].cashPayable += amount;
+          ledgerMap[name].metalReceivable += weight;
+        } else if (item.type === "Payment") {
+          if (amount >= 0) {
+            ledgerMap[name].cashReceivable -= amount;
+          } else {
+            ledgerMap[name].cashPayable += Math.abs(amount);
+          }
+        }
+      });
+
+      const names = Object.keys(ledgerMap);
+
+      if (!names.length) {
+        tbody.innerHTML = `<tr><td colspan="5">No ledger data available</td></tr>`;
+        return;
+      }
+
+      names.forEach(name => {
+        const row = ledgerMap[name];
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${name}</td>
+            <td>${row.metalReceivable > 0 ? `<span class="ledger-badge badge-gray">${row.metalReceivable.toFixed(3)} gm</span>` : "None"}</td>
+            <td>${row.metalPayable > 0 ? `<span class="ledger-badge badge-red">${row.metalPayable.toFixed(3)} gm</span>` : "None"}</td>
+            <td>${row.cashReceivable > 0 ? `<span class="ledger-badge badge-green">${row.cashReceivable.toFixed(2)} Rs</span>` : "None"}</td>
+            <td>${row.cashPayable > 0 ? `<span class="ledger-badge badge-red">${row.cashPayable.toFixed(2)} Rs</span>` : "None"}</td>
+          </tr>
+        `;
+      });
+    }
+
+    document.getElementById("txnQty")?.addEventListener("input", calculateTxnAmount);
+    document.getElementById("txnGrossWeight")?.addEventListener("input", calculateTxnAmount);
+    document.getElementById("txnMetalPrice")?.addEventListener("input", calculateTxnAmount);
+    document.getElementById("txnMc")?.addEventListener("input", calculateTxnAmount);
+    document.getElementById("txnHmFluid")?.addEventListener("input", calculateTxnAmount);
+
+    window.addEventListener("load", function () {
+      loadTxnCustomers();
+      loadTxnItems();
+      renderTransactionHistory();
+      renderLedger();
+      clearTransactionForm();
+    });
+  </script>
+</body>
+</html>

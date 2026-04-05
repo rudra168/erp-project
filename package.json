@@ -1,0 +1,14 @@
+{
+  "name": "erp-system",
+  "version": "1.0.0",
+  "main": "js/backend/server.js",
+  "scripts": {
+    "start": "node js/backend/server.js",
+    "dev": "nodemon js/backend/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0"
+  }
+}

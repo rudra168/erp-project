@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sales History</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+
+        <ul class="menu">
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="sticker.html">Sticker</a></li>
+          <li><a href="invoice.html">Invoice</a></li>
+          <li><a class="active" href="sales-history.html">Sales History</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>Sales History Report</p>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <button onclick="window.print()">Print</button>
+          <div class="profile-box"></div>
+        </div>
+      </div>
+
+      <section class="page active">
+        <div class="section-box">
+          <h2>Sales History</h2>
+          <p>Yahan saved invoices aur customer sales details dikhengi.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Customer</th>
+                  <th>Mobile</th>
+                  <th>GST</th>
+                  <th>Date</th>
+                  <th>Payment Mode</th>
+                  <th>Payment Status</th>
+                  <th>Paid</th>
+                  <th>Due</th>
+                  <th>Total Items</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody id="salesHistoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
