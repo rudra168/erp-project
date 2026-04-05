@@ -257,18 +257,21 @@
     }
 
     async function loadSalesHistory() {
-      try {
-        const res = await fetch(`${API_BASE}/getSalesHistory`, { cache: "no-store" });
-        const data = await res.json();
+  try {
+    const response = await fetch(`${API_BASE}/sales-history`);
+    const data = await response.json();
 
-        salesHistoryData = data && data.success && Array.isArray(data.sales) ? data.sales : [];
-        applyInitialSalesFilter();
-        renderSalesHistory();
-      } catch (error) {
-        console.log("Sales history load error:", error);
-        alert("Sales history load error");
-      }
-    }
+    salesData = Array.isArray(data) ? data : [];
+    renderSalesHistory();
+    updateSalesSummary();
+  } catch (error) {
+    console.error("Sales history load error", error);
+
+    salesData = [];
+    renderSalesHistory();
+    updateSalesSummary();
+  }
+}
 
     function applyInitialSalesFilter() {
       const view = getUrlViewFilter();
@@ -441,6 +444,7 @@
     window.addEventListener("load", function () {
       loadSalesHistory();
     });
+  
   </script>
 </body>
 </html>

@@ -4,17 +4,34 @@ const mysql = require("mysql2/promise");
 const path = require("path");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5000",
+  "http://127.0.0.1:5000",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://erp-project-eight.vercel.app"
+];
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS not allowed for this origin"));
+  }
+}));
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "..")));
 
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "12345",
-  database: "erp_sankha",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT || 3306),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -602,7 +619,7 @@ app.put("/returnItem/:barcode", async (req, res) => {
    DEFAULT
 ========================= */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "..", "dashboard.html"));
+  res.json({ success: true, message: "ERP backend running" });
 });
 
 app.listen(PORT, async () => {
@@ -614,6 +631,5 @@ app.listen(PORT, async () => {
     console.error("MySQL connection failed:", error.message);
   }
 
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Open: http://localhost:${PORT}/dashboard.html`);
+  console.log(`Server running on port ${PORT}`);
 });
