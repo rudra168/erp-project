@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -921,3 +922,928 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+        <ul class="menu">
+          <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+          <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+          <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+          <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+          <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+          <li><a href="billing.html" class="active"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+          <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+          <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+          <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+          <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" type="button" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>Billing Management</p>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <button type="button" onclick="printBillingInvoice()">Print</button>
+          <div class="profile-box"></div>
+        </div>
+      </div>
+
+      <section class="page active">
+        <div class="section-box">
+          <h2>Billing</h2>
+          <p>Invoice se item auto billing me aayega. Yahan rate aur MC daalke final bill print karo.</p>
+
+          <div class="sub-card">
+            <h3>Customer Details</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label>Customer Name</label>
+                <input type="text" id="billCustomerName" placeholder="Enter customer name" />
+              </div>
+
+              <div class="input-box">
+                <label>Mobile</label>
+                <input type="text" id="billMobile" placeholder="Enter mobile no" />
+              </div>
+
+              <div class="input-box">
+                <label>GST Number</label>
+                <input type="text" id="billGst" placeholder="Enter GST no" />
+              </div>
+
+              <div class="input-box">
+                <label>Invoice Number</label>
+                <input type="text" id="billInvoiceNumber" placeholder="Enter invoice number" />
+              </div>
+
+              <div class="input-box">
+                <label>Date</label>
+                <input type="date" id="billDate" />
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Payment Details</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label>Payment Mode</label>
+                <select id="billPaymentMode">
+                  <option value="">Select</option>
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Card">Card</option>
+                  <option value="Bank">Bank</option>
+                </select>
+              </div>
+
+              <div class="input-box">
+                <label>Payment Status</label>
+                <select id="billPaymentStatus">
+                  <option value="">Select</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Partial">Partial</option>
+                  <option value="Due">Due</option>
+                </select>
+              </div>
+
+              <div class="input-box">
+                <label>Paid Amount</label>
+                <input type="number" id="billPaidAmount" placeholder="Enter paid amount" />
+              </div>
+
+              <div class="input-box">
+                <label>Due Amount</label>
+                <input type="number" id="billDueAmount" placeholder="Enter due amount" />
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+              <h3>Billing Item Entry</h3>
+              <div class="btn-row" style="margin-top:0;">
+                <button class="primary-btn" type="button" onclick="loadItemsFromInvoice(true)">Load From Invoice</button>
+                <button class="secondary-btn" type="button" onclick="clearBillingAll()">Clear Billing</button>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label>Item Name</label>
+                <input type="text" id="billItemName" placeholder="Item Name" />
+              </div>
+
+              <div class="input-box">
+                <label>SKU</label>
+                <input type="text" id="billSku" placeholder="SKU" />
+              </div>
+
+              <div class="input-box">
+                <label>Weight</label>
+                <input type="number" step="0.001" id="billWeight" placeholder="Weight" />
+              </div>
+
+              <div class="input-box">
+                <label>Purity</label>
+                <input type="number" step="0.01" id="billPurity" placeholder="Purity %" />
+              </div>
+
+              <div class="input-box">
+                <label>Size</label>
+                <input type="text" id="billSize" placeholder="Size" />
+              </div>
+
+              <div class="input-box">
+                <label>Lot</label>
+                <input type="text" id="billLot" placeholder="Lot" />
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="primary-btn" type="button" onclick="addBillingItem()">Add Item</button>
+              <button class="secondary-btn" type="button" onclick="clearBillingItemForm()">Clear</button>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Billing Table</h3>
+
+            <div class="table-wrap" style="margin-top:12px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>SL</th>
+                    <th>Item</th>
+                    <th>SKU</th>
+                    <th>Weight</th>
+                    <th>Purity</th>
+                    <th>Size</th>
+                    <th>Lot</th>
+                    <th>Pure Weight</th>
+                    <th>Rate</th>
+                    <th>MC</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="billingTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Billing Summary</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label>Bill Type</label>
+                <select id="billType" onchange="calculateBillingTotal()">
+                  <option value="GST">GST Bill</option>
+                  <option value="NON_GST">Non-GST Bill</option>
+                </select>
+              </div>
+
+              <div class="input-box">
+                <label>Tax Type</label>
+                <select id="billTaxType" onchange="calculateBillingTotal()">
+                  <option value="CGST_SGST">CGST + SGST</option>
+                  <option value="IGST">IGST</option>
+                </select>
+              </div>
+
+              <div class="input-box">
+                <label>Rate / Gram</label>
+                <input type="number" id="billRatePerGram" placeholder="Enter rate per gram" oninput="calculateBillingTotal()" />
+              </div>
+
+              <div class="input-box">
+                <label>MC (₹ per gram)</label>
+                <input type="number" id="billMcRate" placeholder="Enter MC per gram" oninput="calculateBillingTotal()" />
+              </div>
+
+              <div class="input-box">
+                <label>Round Off / Adjustment</label>
+                <input type="number" id="billRoundOff" value="0" oninput="calculateBillingTotal()" />
+              </div>
+
+              <div class="input-box">
+                <label>Subtotal</label>
+                <input type="text" id="billSubtotal" readonly />
+              </div>
+
+              <div class="input-box">
+                <label>CGST</label>
+                <input type="text" id="billCgst" readonly />
+              </div>
+
+              <div class="input-box">
+                <label>SGST</label>
+                <input type="text" id="billSgst" readonly />
+              </div>
+
+              <div class="input-box">
+                <label>IGST</label>
+                <input type="text" id="billIgst" readonly />
+              </div>
+
+              <div class="input-box">
+                <label>Grand Total</label>
+                <input type="text" id="billGrandTotal" readonly />
+              </div>
+            </div>
+
+            <div class="summary" style="margin-top:12px;">
+              <h3>Quick Summary</h3>
+              <p>Total Count: <span id="billTotalCount">0</span></p>
+              <p>Total Weight: <span id="billTotalWeight">0.000</span> g</p>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button type="button" class="primary-btn" onclick="saveBillingRecord()">Save</button>
+              <button type="button" class="primary-btn" onclick="calculateBillingTotal()">Calculate Bill</button>
+              <button type="button" class="secondary-btn" onclick="printBillingInvoice()">Print GST Invoice</button>
+              <button type="button" class="secondary-btn" onclick="downloadBillingInvoice()">Download</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    let billingItems = [];
+    let removedBillingBarcodes = JSON.parse(localStorage.getItem("removedBillingBarcodes")) || [];
+
+    function num(value) {
+      const n = Number(value || 0);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    function saveBillingItems() {
+      localStorage.setItem("billingItems", JSON.stringify(billingItems));
+    }
+
+    function saveRemovedBillingBarcodes() {
+      localStorage.setItem("removedBillingBarcodes", JSON.stringify(removedBillingBarcodes));
+    }
+
+    function getTodayDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function addBillingItem() {
+      const itemName = document.getElementById("billItemName").value.trim();
+      const sku = document.getElementById("billSku").value.trim();
+      const weight = num(document.getElementById("billWeight").value);
+      const purity = num(document.getElementById("billPurity").value);
+      const size = document.getElementById("billSize").value.trim();
+      const lot = document.getElementById("billLot").value.trim();
+
+      if (!itemName || !weight) {
+        alert("Item name aur weight daalo");
+        return;
+      }
+
+      billingItems.push({
+        id: "MANUAL-" + Date.now(),
+        barcode: "",
+        itemName,
+        sku,
+        weight,
+        purity,
+        size,
+        lot,
+        pureWeight: 0,
+        totalPrice: 0
+      });
+
+      renderBillingTable();
+      calculateBillingTotal();
+      clearBillingItemForm();
+      saveBillingItems();
+    }
+
+    function clearBillingItemForm() {
+      document.getElementById("billItemName").value = "";
+      document.getElementById("billSku").value = "";
+      document.getElementById("billWeight").value = "";
+      document.getElementById("billPurity").value = "";
+      document.getElementById("billSize").value = "";
+      document.getElementById("billLot").value = "";
+    }
+
+    function deleteBillingItem(index) {
+      const item = billingItems[index];
+
+      if (!item) return;
+
+      if (item.barcode) {
+        const barcode = String(item.barcode).trim();
+        if (barcode && !removedBillingBarcodes.includes(barcode)) {
+          removedBillingBarcodes.push(barcode);
+          saveRemovedBillingBarcodes();
+        }
+      }
+
+      billingItems.splice(index, 1);
+      renderBillingTable();
+      calculateBillingTotal();
+      saveBillingItems();
+    }
+
+    function loadItemsFromInvoice(showMessage = false) {
+      const processedItems = JSON.parse(localStorage.getItem("processedInvoiceItems")) || [];
+
+      if (!Array.isArray(processedItems) || !processedItems.length) {
+        if (showMessage) {
+          alert("Invoice se koi item nahi mila");
+        }
+        return;
+      }
+
+      const filteredItems = processedItems.filter((item) => {
+        const barcode = String(item.barcode || "").trim();
+        return !removedBillingBarcodes.includes(barcode);
+      });
+
+      if (!filteredItems.length) {
+        if (showMessage) {
+          alert("Invoice ke saare items delete ho chuke hain ya billing me skip ho gaye hain");
+        }
+        billingItems = [];
+        renderBillingTable();
+        calculateBillingTotal();
+        saveBillingItems();
+        return;
+      }
+
+      billingItems = filteredItems.map((item, index) => ({
+        id: item.id || item.barcode || ("INV-" + index + "-" + Date.now()),
+        barcode: item.barcode || "",
+        itemName: item.productName || "",
+        sku: item.sku || "",
+        weight: num(item.weight),
+        purity: num(item.purity),
+        size: item.size || "",
+        lot: item.lot || "",
+        pureWeight: 0,
+        totalPrice: 0
+      }));
+
+      const first = filteredItems[0] || {};
+      document.getElementById("billCustomerName").value = first.customerName || "";
+      document.getElementById("billMobile").value = first.mobile || "";
+      document.getElementById("billInvoiceNumber").value = first.invoiceNumber || "";
+      if (first.invoiceDate) {
+        document.getElementById("billDate").value = first.invoiceDate;
+      }
+
+      renderBillingTable();
+      calculateBillingTotal();
+      saveBillingItems();
+
+      if (showMessage) {
+        alert("Invoice se items billing me load ho gaye");
+      }
+    }
+
+    function clearBillingAll() {
+      billingItems = [];
+      removedBillingBarcodes = [];
+
+      renderBillingTable();
+      calculateBillingTotal();
+
+      localStorage.removeItem("billingItems");
+      localStorage.removeItem("removedBillingBarcodes");
+
+      const ids = [
+        "billCustomerName",
+        "billMobile",
+        "billGst",
+        "billInvoiceNumber",
+        "billDate",
+        "billPaymentMode",
+        "billPaymentStatus",
+        "billPaidAmount",
+        "billDueAmount",
+        "billRatePerGram",
+        "billMcRate",
+        "billRoundOff",
+        "billSubtotal",
+        "billCgst",
+        "billSgst",
+        "billIgst",
+        "billGrandTotal"
+      ];
+
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (id === "billRoundOff") {
+            el.value = "0";
+          } else {
+            el.value = "";
+          }
+        }
+      });
+
+      const dateInput = document.getElementById("billDate");
+      if (dateInput) {
+        dateInput.value = getTodayDate();
+      }
+    }
+
+    function renderBillingTable() {
+      const tbody = document.getElementById("billingTableBody");
+      const totalCount = document.getElementById("billTotalCount");
+      const totalWeightEl = document.getElementById("billTotalWeight");
+
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+      let totalWeight = 0;
+
+      billingItems.forEach((item, index) => {
+        totalWeight += num(item.weight);
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${item.itemName || ""}</td>
+            <td>${item.sku || ""}</td>
+            <td>${num(item.weight).toFixed(3)}</td>
+            <td>${num(item.purity).toFixed(2)}</td>
+            <td>${item.size || ""}</td>
+            <td>${item.lot || ""}</td>
+            <td>${num(item.pureWeight).toFixed(3)}</td>
+            <td>${num(document.getElementById("billRatePerGram")?.value).toFixed(2)}</td>
+            <td>${num(document.getElementById("billMcRate")?.value).toFixed(2)}</td>
+            <td>${num(item.totalPrice).toFixed(2)}</td>
+            <td>
+              <button type="button" class="mini-btn clear-btn" onclick="deleteBillingItem(${index})">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      if (!billingItems.length) {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">No billing items found</td></tr>`;
+      }
+
+      if (totalCount) totalCount.textContent = billingItems.length;
+      if (totalWeightEl) totalWeightEl.textContent = totalWeight.toFixed(3);
+    }
+
+    function calculateBillingTotal() {
+      const billType = document.getElementById("billType").value || "GST";
+      const taxType = document.getElementById("billTaxType").value || "CGST_SGST";
+      const rate = num(document.getElementById("billRatePerGram").value);
+      const mcRate = num(document.getElementById("billMcRate").value);
+      const roundOff = num(document.getElementById("billRoundOff").value);
+
+      let subtotal = 0;
+
+      billingItems = billingItems.map((item) => {
+        const purityValue = num(item.purity) > 0 ? num(item.purity) : 100;
+        const pureWeight = (num(item.weight) * purityValue) / 100;
+        const metalAmount = pureWeight * rate;
+        const mcAmount = pureWeight * mcRate;
+        const totalPrice = metalAmount + mcAmount;
+
+        subtotal += totalPrice;
+
+        return {
+          ...item,
+          pureWeight,
+          totalPrice
+        };
+      });
+
+      let cgst = 0;
+      let sgst = 0;
+      let igst = 0;
+
+      if (billType === "GST") {
+        if (taxType === "CGST_SGST") {
+          cgst = subtotal * 0.015;
+          sgst = subtotal * 0.015;
+        } else {
+          igst = subtotal * 0.03;
+        }
+      }
+
+      const grandTotal = subtotal + cgst + sgst + igst + roundOff;
+
+      document.getElementById("billSubtotal").value = subtotal.toFixed(2);
+      document.getElementById("billCgst").value = cgst.toFixed(2);
+      document.getElementById("billSgst").value = sgst.toFixed(2);
+      document.getElementById("billIgst").value = igst.toFixed(2);
+      document.getElementById("billGrandTotal").value = grandTotal.toFixed(2);
+
+      renderBillingTable();
+      saveBillingItems();
+    }
+
+    function getBillingRecord() {
+      calculateBillingTotal();
+
+      const customerName = document.getElementById("billCustomerName").value.trim() || "";
+      const mobile = document.getElementById("billMobile").value.trim() || "";
+      const gstNo = document.getElementById("billGst").value.trim() || "";
+      const invoiceNumber = document.getElementById("billInvoiceNumber").value.trim() || ("BILL-" + Date.now());
+      const billDate = document.getElementById("billDate").value || getTodayDate();
+      const paymentMode = document.getElementById("billPaymentMode").value || "";
+      const paymentStatus = document.getElementById("billPaymentStatus").value || "";
+      const paidAmount = num(document.getElementById("billPaidAmount").value || 0);
+      const dueAmount = num(document.getElementById("billDueAmount").value || 0);
+      const billType = document.getElementById("billType").value || "GST";
+      const taxType = document.getElementById("billTaxType").value || "CGST_SGST";
+      const ratePerGram = num(document.getElementById("billRatePerGram").value);
+      const mcRate = num(document.getElementById("billMcRate").value);
+      const roundOff = num(document.getElementById("billRoundOff").value);
+      const subtotal = num(document.getElementById("billSubtotal").value);
+      const cgst = num(document.getElementById("billCgst").value);
+      const sgst = num(document.getElementById("billSgst").value);
+      const igst = num(document.getElementById("billIgst").value);
+      const grandTotal = num(document.getElementById("billGrandTotal").value);
+      const totalWeight = billingItems.reduce((sum, item) => sum + num(item.weight), 0);
+
+      return {
+        id: invoiceNumber || ("BILL-" + Date.now()),
+        invoiceNumber,
+        customerName,
+        mobile,
+        gstNo,
+        billDate,
+        paymentMode,
+        paymentStatus,
+        paidAmount,
+        dueAmount,
+        billType,
+        taxType,
+        ratePerGram,
+        mcRate,
+        roundOff,
+        subtotal,
+        cgst,
+        sgst,
+        igst,
+        grandTotal,
+        totalCount: billingItems.length,
+        totalWeight,
+        items: billingItems.map((item) => ({ ...item })),
+        savedAt: new Date().toLocaleString(),
+        source: "billing"
+      };
+    }
+
+    function saveRecordToHistoryArray(key, record) {
+      const oldData = JSON.parse(localStorage.getItem(key)) || [];
+      const list = Array.isArray(oldData) ? oldData : [];
+      const index = list.findIndex((item) => String(item.id || "") === String(record.id || ""));
+
+      if (index >= 0) {
+        list[index] = record;
+      } else {
+        list.unshift(record);
+      }
+
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+
+    function saveBillingRecord(showAlert = true) {
+      if (!billingItems.length) {
+        alert("Billing table me items nahi hain");
+        return null;
+      }
+
+      const record = getBillingRecord();
+
+      saveRecordToHistoryArray("billingHistory", record);
+      saveRecordToHistoryArray("salesHistory", {
+        ...record,
+        historyType: "billing_saved"
+      });
+
+      if (showAlert) {
+        alert("Billing record save ho gaya");
+      }
+
+      return record;
+    }
+
+    function buildBillingPrintHtml() {
+      const record = saveBillingRecord(false);
+      if (!record) return "";
+
+      const businessName = "RAJPATI ENTERPRISE";
+      const businessAddress = "baulakud 42mauza cuttack-754112, Odisha";
+      const businessGstin = "21DAWPG9914G1ZF";
+
+      const customerName = record.customerName || "";
+      const mobile = record.mobile || "";
+      const gstNo = record.gstNo || "";
+      const invoiceNumber = record.invoiceNumber || "";
+      const billDate = record.billDate || "";
+      const paymentMode = record.paymentMode || "";
+      const paymentStatus = record.paymentStatus || "";
+      const paidAmount = num(record.paidAmount).toFixed(2);
+      const dueAmount = num(record.dueAmount).toFixed(2);
+      const billType = record.billType || "GST";
+      const taxType = record.taxType || "CGST_SGST";
+
+      const subtotal = num(record.subtotal).toFixed(2);
+      const cgst = num(record.cgst).toFixed(2);
+      const sgst = num(record.sgst).toFixed(2);
+      const igst = num(record.igst).toFixed(2);
+      const roundOff = num(record.roundOff).toFixed(2);
+      const grandTotal = num(record.grandTotal).toFixed(2);
+      const ratePerGram = num(record.ratePerGram).toFixed(2);
+      const mcRate = num(record.mcRate).toFixed(2);
+
+      let rows = "";
+      let totalWeight = 0;
+
+      record.items.forEach((item, index) => {
+        totalWeight += num(item.weight);
+
+        rows += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${item.itemName || ""}</td>
+            <td>${item.sku || ""}</td>
+            <td>${num(item.weight).toFixed(3)}</td>
+            <td>${item.size || ""}</td>
+            <td>${item.lot || ""}</td>
+            <td>${num(item.purity).toFixed(2)}</td>
+            <td>${ratePerGram}</td>
+            <td>${mcRate}</td>
+            <td>${num(item.totalPrice).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+
+      const taxRows = billType === "GST"
+        ? (
+            taxType === "CGST_SGST"
+              ? `
+                <tr><td><strong>CGST @ 1.5%</strong></td><td>₹ ${cgst}</td></tr>
+                <tr><td><strong>SGST @ 1.5%</strong></td><td>₹ ${sgst}</td></tr>
+              `
+              : `
+                <tr><td><strong>IGST @ 3%</strong></td><td>₹ ${igst}</td></tr>
+              `
+          )
+        : `
+          <tr><td><strong>GST</strong></td><td>₹ 0.00</td></tr>
+        `;
+
+      return `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Billing Print</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 18px; color: #111; }
+    .invoice-box { max-width: 1250px; margin: auto; border: 2px solid #111; padding: 12px; }
+    .title-main { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 16px; }
+    .topline { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; font-size: 14px; margin-bottom: 8px; }
+    .header-box { border: 1px solid #111; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; min-height: 90px; margin-bottom: 10px; }
+    .header-box > div { padding: 10px; font-size: 14px; }
+    .header-center { text-align: center; font-weight: bold; }
+    .deal-box { display: inline-block; background: #111; color: #fff; padding: 8px 14px; margin-top: 8px; font-size: 13px; }
+    .party-box { border: 1px solid #111; padding: 12px; margin-bottom: 10px; min-height: 130px; line-height: 1.9; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #111; padding: 8px; font-size: 13px; text-align: center; }
+    th { background: #111; color: white; }
+    .summary-grid { display: grid; grid-template-columns: 1.3fr 1fr; margin-top: 10px; gap: 0; }
+    .left-summary, .right-summary { border: 1px solid #111; min-height: 170px; }
+    .left-summary { padding: 10px; font-size: 14px; line-height: 2; border-right: none; }
+    .right-summary table { width: 100%; height: 100%; }
+    .right-summary td { font-size: 14px; font-weight: 600; text-align: left; }
+    .bottom-box { display: grid; grid-template-columns: 2fr 0.6fr; margin-top: 10px; }
+    .declaration, .sign-box { border: 1px solid #111; min-height: 90px; padding: 12px; font-size: 14px; display: flex; align-items: end; box-sizing: border-box; }
+    .sign-box { justify-content: center; text-align: center; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="invoice-box">
+    <div class="title-main">${businessName}</div>
+
+    <div class="topline">
+      <div><strong>GSTIN :</strong> ${businessGstin}</div>
+      <div><strong>TAX INVOICE</strong></div>
+      <div><strong>Sln/Ivn :</strong> ${invoiceNumber}</div>
+    </div>
+
+    <div class="header-box">
+      <div><strong>A/c No:</strong> 25050400005430</div>
+      <div class="header-center">
+        RAJPATI ENTERPRISE<br>
+        JHINKIRIA ,42 MOUJA,CUTTACK-112<br>
+        <span class="deal-box">Deals In: All types of Gold & silver Sankha Trading.</span>
+      </div>
+      <div><strong>IFSC CODE :</strong> BARB0CUTMAN</div>
+    </div>
+
+    <div class="party-box">
+      <div><strong>Name:</strong> ${customerName}</div>
+      <div><strong>Regd Name:</strong> ${customerName}</div>
+      <div><strong>Party's GSTIN/Unique ID:</strong> ${gstNo}</div>
+      <div><strong>Mob:</strong> ${mobile}</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>SL. No.</th>
+          <th>Item Name</th>
+          <th>SKU</th>
+          <th>Weight (gms)</th>
+          <th>Size</th>
+          <th>Lot</th>
+          <th>Purity</th>
+          <th>₹ / Gram</th>
+          <th>MC</th>
+          <th>Total Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr>
+          <td colspan="3"><strong>Total</strong></td>
+          <td><strong>${totalWeight.toFixed(3)}</strong></td>
+          <td colspan="5">--</td>
+          <td><strong>${subtotal}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:8px; font-size:14px; display:flex; justify-content:space-between;">
+      <div><strong>Payment (${paymentStatus || "-"})</strong></div>
+      <div><strong>Payment Mode:</strong> ${paymentMode || "-"}</div>
+      <div><strong>Bill Type:</strong> ${billType}</div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="left-summary">
+        <div><strong>DATE:</strong> ${billDate}</div>
+        <div><strong>Paid Amount:</strong> ₹ ${paidAmount}</div>
+        <div><strong>Due Amount:</strong> ₹ ${dueAmount}</div>
+        <div><strong>Address:</strong> ${businessAddress}</div>
+      </div>
+
+      <div class="right-summary">
+        <table>
+          <tr><td><strong>SUBTOTAL</strong></td><td>₹ ${subtotal}</td></tr>
+          ${taxRows}
+          <tr><td><strong>ROUND OFF / ADJUSTMENT</strong></td><td>₹ ${roundOff}</td></tr>
+          <tr><td><strong>GRAND TOTAL</strong></td><td><strong>₹ ${grandTotal}</strong></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="bottom-box">
+      <div class="declaration">
+        Declaration : Subject to JHINKIRIA ,42 MOUJA,CUTTACK-112 Jurisdiction only.
+      </div>
+      <div class="sign-box">
+        for RAJPATI<br>ENTERPRISE
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+    }
+
+    function printBillingInvoice() {
+      if (!billingItems.length) {
+        alert("Billing table me items nahi hain");
+        return;
+      }
+
+      const html = buildBillingPrintHtml();
+      if (!html) return;
+
+      const printWindow = window.open("", "_blank", "width=1400,height=900");
+      if (!printWindow) {
+        alert("Popup block ho gaya");
+        return;
+      }
+
+      printWindow.document.write(html + `
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+            }, 400);
+          };
+        <\/script>
+      `);
+
+      printWindow.document.close();
+    }
+
+    function downloadBillingInvoice() {
+      if (!billingItems.length) {
+        alert("Billing table me items nahi hain");
+        return;
+      }
+
+      const html = buildBillingPrintHtml();
+      if (!html) return;
+
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = html;
+
+      const invoiceBox = wrapper.querySelector(".invoice-box");
+      if (!invoiceBox) {
+        alert("Download failed");
+        return;
+      }
+
+      const invoiceNumber = document.getElementById("billInvoiceNumber").value.trim() || ("billing-" + Date.now());
+
+      const opt = {
+        margin: 8,
+        filename: `${invoiceNumber}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      };
+
+      html2pdf().set(opt).from(invoiceBox).save();
+      saveBillingRecord(false);
+    }
+
+    window.addEventListener("load", function () {
+      const dateInput = document.getElementById("billDate");
+      if (dateInput && !dateInput.value) {
+        dateInput.value = getTodayDate();
+      }
+
+      const savedBillingItems = JSON.parse(localStorage.getItem("billingItems")) || [];
+      billingItems = Array.isArray(savedBillingItems) ? savedBillingItems : [];
+
+      removedBillingBarcodes = JSON.parse(localStorage.getItem("removedBillingBarcodes")) || [];
+      if (!Array.isArray(removedBillingBarcodes)) {
+        removedBillingBarcodes = [];
+      }
+
+      renderBillingTable();
+      calculateBillingTotal();
+
+      if (!billingItems.length) {
+        loadItemsFromInvoice(false);
+      }
+    });
+  </script>
+</body>
+</html>
+>>>>>>> c250111e91ee99b4f18aa97f64cbec98622dd916

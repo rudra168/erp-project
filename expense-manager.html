@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -490,3 +491,497 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Manager</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      min-width: 260px;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      animation: slideInToast 0.25s ease;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+    }
+
+    .toast.info {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+
+    @keyframes slideInToast {
+      from {
+        opacity: 0;
+        transform: translateX(80px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+
+       <ul class="menu">
+  <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+  <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+  <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+  <li><a href="expense-manager.html" class="active"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+  <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+</ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>ERP Dashboard Template</p>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <select>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Yearly</option>
+          </select>
+          <button type="button" onclick="window.print()">Print</button>
+          <div class="profile-box"></div>
+        </div>
+      </div>
+
+      <section class="page active">
+        <div class="section-box">
+          <h2>Expense Manager</h2>
+          <p>Yahan family / internal expense, date-wise record, month-wise filter aur person-wise summary manage hoga.</p>
+
+          <!-- ENTRY FORM -->
+          <div class="sub-card">
+            <h3>Expense Entry</h3>
+
+            <input type="hidden" id="expenseEditId" />
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="expensePerson">Name</label>
+                <input type="text" id="expensePerson" placeholder="Name" />
+              </div>
+
+              <div class="input-box">
+                <label for="expenseDate">Date</label>
+                <input type="date" id="expenseDate" />
+              </div>
+
+              <div class="input-box">
+                <label for="expenseTime">Time</label>
+                <input type="time" id="expenseTime" />
+              </div>
+
+              <div class="input-box">
+                <label for="expenseAmount">Amount</label>
+                <input type="number" id="expenseAmount" placeholder="Kitna liya" />
+              </div>
+
+              <div class="input-box">
+                <label for="expenseCategory">Category</label>
+                <select id="expenseCategory">
+                  <option value="">Select</option>
+                  <option value="Ghar">Ghar</option>
+                  <option value="Medicine">Medicine</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Business">Business</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Food">Food</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="input-box">
+                <label for="expenseReason">Reason / Kisliye</label>
+                <input type="text" id="expenseReason" placeholder="Ghar ke liye / medicine / etc." />
+              </div>
+
+              <div class="input-box" style="grid-column: 1 / -1;">
+                <label for="expenseNote">Note</label>
+                <textarea id="expenseNote" placeholder="Extra note..." style="min-height:80px; padding:10px;"></textarea>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px;">
+              <button type="button" class="primary-btn" onclick="saveExpense()">Save Expense</button>
+              <button type="button" class="secondary-btn" onclick="clearExpenseForm()">Clear</button>
+            </div>
+          </div>
+
+          <!-- FILTER + SUMMARY -->
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Filter & Summary</h3>
+
+            <div class="form-grid">
+              <div class="input-box">
+                <label for="filterMonth">Select Month</label>
+                <input type="month" id="filterMonth" />
+              </div>
+
+              <div class="input-box">
+                <label for="filterPerson">Select Person</label>
+                <select id="filterPerson"></select>
+              </div>
+
+              <div class="input-box">
+                <label for="filterCategory">Select Category</label>
+                <select id="filterCategory">
+                  <option value="">All Categories</option>
+                  <option value="Ghar">Ghar</option>
+                  <option value="Medicine">Medicine</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Business">Business</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Food">Food</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-top:16px;">
+              <div class="stat-card"><h3 id="sumTotal">Total Amount: 0</h3></div>
+              <div class="stat-card"><h3 id="sumPersonTotal">Selected Person Total: 0</h3></div>
+              <div class="stat-card"><h3 id="sumGhar">Ghar: 0</h3></div>
+              <div class="stat-card"><h3 id="sumMedicine">Medicine: 0</h3></div>
+              <div class="stat-card"><h3 id="sumPersonal">Personal: 0</h3></div>
+              <div class="stat-card"><h3 id="sumBusiness">Business: 0</h3></div>
+              <div class="stat-card"><h3 id="sumEmergency">Emergency: 0</h3></div>
+              <div class="stat-card"><h3 id="sumTravel">Travel: 0</h3></div>
+              <div class="stat-card"><h3 id="sumFood">Food: 0</h3></div>
+              <div class="stat-card"><h3 id="sumOther">Other: 0</h3></div>
+              <div class="stat-card"><h3 id="sumCount">Entries: 0</h3></div>
+            </div>
+          </div>
+
+          <!-- TABLE -->
+          <div class="sub-card" style="margin-top:16px;">
+            <h3>Expense History</h3>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Name</th>
+                  <th>Amount</th>
+                  <th>Category</th>
+                  <th>Reason</th>
+                  <th>Note</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="expenseTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastBox" class="toast-box"></div>
+
+  <script>
+    let expenseData = JSON.parse(localStorage.getItem("expenseData")) || [];
+
+    function showToast(message, type = "success") {
+      const box = document.getElementById("toastBox");
+      if (!box) return;
+
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+
+      box.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(60px)";
+        toast.style.transition = "0.3s ease";
+      }, 2200);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 2600);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    function saveExpenseData() {
+      localStorage.setItem("expenseData", JSON.stringify(expenseData));
+    }
+
+    function clearExpenseForm() {
+      document.getElementById("expenseEditId").value = "";
+      document.getElementById("expensePerson").value = "";
+      document.getElementById("expenseDate").value = "";
+      document.getElementById("expenseTime").value = "";
+      document.getElementById("expenseAmount").value = "";
+      document.getElementById("expenseCategory").value = "";
+      document.getElementById("expenseReason").value = "";
+      document.getElementById("expenseNote").value = "";
+    }
+
+    function saveExpense() {
+      const editId = document.getElementById("expenseEditId")?.value || "";
+      const person = document.getElementById("expensePerson")?.value?.trim() || "";
+      const date = document.getElementById("expenseDate")?.value || "";
+      const time = document.getElementById("expenseTime")?.value || "";
+      const amount = Number(document.getElementById("expenseAmount")?.value || 0);
+      const category = document.getElementById("expenseCategory")?.value || "";
+      const reason = document.getElementById("expenseReason")?.value?.trim() || "";
+      const note = document.getElementById("expenseNote")?.value?.trim() || "";
+
+      if (!person || !date || amount <= 0 || !category) {
+        showToast("Name, date, amount aur category sahi daalo", "error");
+        return;
+      }
+
+      const expenseObj = {
+        id: editId ? Number(editId) : Date.now(),
+        person,
+        date,
+        time,
+        amount,
+        category,
+        reason,
+        note
+      };
+
+      if (editId) {
+        const index = expenseData.findIndex(item => Number(item.id) === Number(editId));
+        if (index >= 0) {
+          expenseData[index] = expenseObj;
+        }
+      } else {
+        expenseData.push(expenseObj);
+      }
+
+      saveExpenseData();
+      clearExpenseForm();
+      loadPersonFilter();
+      renderExpenseTable();
+      updateExpenseSummary();
+
+      showToast(editId ? "Expense updated successfully" : "Expense saved successfully", "success");
+    }
+
+    function editExpense(id) {
+      const item = expenseData.find(exp => Number(exp.id) === Number(id));
+      if (!item) return;
+
+      document.getElementById("expenseEditId").value = item.id || "";
+      document.getElementById("expensePerson").value = item.person || "";
+      document.getElementById("expenseDate").value = item.date || "";
+      document.getElementById("expenseTime").value = item.time || "";
+      document.getElementById("expenseAmount").value = item.amount || "";
+      document.getElementById("expenseCategory").value = item.category || "";
+      document.getElementById("expenseReason").value = item.reason || "";
+      document.getElementById("expenseNote").value = item.note || "";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      showToast("Edit mode on", "info");
+    }
+
+    function deleteExpense(id) {
+      const ok = confirm("Ye expense delete karna hai?");
+      if (!ok) return;
+
+      expenseData = expenseData.filter(item => Number(item.id) !== Number(id));
+      saveExpenseData();
+      loadPersonFilter();
+      renderExpenseTable();
+      updateExpenseSummary();
+      showToast("Expense deleted successfully", "success");
+    }
+
+    function loadPersonFilter() {
+      const select = document.getElementById("filterPerson");
+      if (!select) return;
+
+      const oldValue = select.value || "";
+      const names = [...new Set(expenseData.map(item => String(item.person || "").trim()).filter(Boolean))];
+      select.innerHTML = '<option value="">All Persons</option>';
+
+      names.forEach(name => {
+        select.innerHTML += `<option value="${name}">${name}</option>`;
+      });
+
+      if ([...select.options].some(opt => opt.value === oldValue)) {
+        select.value = oldValue;
+      }
+    }
+
+    function getFilteredExpenses() {
+      const selectedMonth = document.getElementById("filterMonth")?.value || "";
+      const selectedPerson = document.getElementById("filterPerson")?.value || "";
+      const selectedCategory = document.getElementById("filterCategory")?.value || "";
+
+      return expenseData.filter(item => {
+        const monthOk = !selectedMonth || String(item.date || "").startsWith(selectedMonth);
+        const personOk = !selectedPerson || String(item.person || "").trim() === selectedPerson;
+        const categoryOk = !selectedCategory || String(item.category || "").trim() === selectedCategory;
+        return monthOk && personOk && categoryOk;
+      });
+    }
+
+    function renderExpenseTable() {
+      const tbody = document.getElementById("expenseTableBody");
+      if (!tbody) return;
+
+      const filtered = getFilteredExpenses();
+      tbody.innerHTML = "";
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="8">No expense found</td></tr>`;
+        return;
+      }
+
+      filtered
+        .slice()
+        .sort((a, b) => {
+          const aDate = `${a.date || ""} ${a.time || ""}`;
+          const bDate = `${b.date || ""} ${b.time || ""}`;
+          return bDate.localeCompare(aDate);
+        })
+        .forEach(item => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${item.date || ""}</td>
+              <td>${item.time || ""}</td>
+              <td>${item.person || ""}</td>
+              <td>${Number(item.amount || 0).toFixed(2)}</td>
+              <td>${item.category || ""}</td>
+              <td>${item.reason || ""}</td>
+              <td>${item.note || ""}</td>
+              <td style="display:flex; gap:6px; justify-content:center;">
+                <button type="button" class="primary-btn" onclick="editExpense(${item.id})">Edit</button>
+                <button type="button" class="secondary-btn" onclick="deleteExpense(${item.id})">Delete</button>
+              </td>
+            </tr>
+          `;
+        });
+    }
+
+    function updateExpenseSummary() {
+      const filtered = getFilteredExpenses();
+      const selectedPerson = document.getElementById("filterPerson")?.value || "";
+
+      const total = filtered.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      function getCategoryTotal(cat) {
+        return filtered
+          .filter(item => String(item.category || "").trim() === cat)
+          .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      }
+
+      let personTotal = 0;
+      if (selectedPerson) {
+        personTotal = filtered
+          .filter(item => String(item.person || "").trim() === selectedPerson)
+          .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      }
+
+      document.getElementById("sumTotal").textContent = "Total Amount: " + total.toFixed(2);
+      document.getElementById("sumPersonTotal").textContent = "Selected Person Total: " + personTotal.toFixed(2);
+      document.getElementById("sumGhar").textContent = "Ghar: " + getCategoryTotal("Ghar").toFixed(2);
+      document.getElementById("sumMedicine").textContent = "Medicine: " + getCategoryTotal("Medicine").toFixed(2);
+      document.getElementById("sumPersonal").textContent = "Personal: " + getCategoryTotal("Personal").toFixed(2);
+      document.getElementById("sumBusiness").textContent = "Business: " + getCategoryTotal("Business").toFixed(2);
+      document.getElementById("sumEmergency").textContent = "Emergency: " + getCategoryTotal("Emergency").toFixed(2);
+      document.getElementById("sumTravel").textContent = "Travel: " + getCategoryTotal("Travel").toFixed(2);
+      document.getElementById("sumFood").textContent = "Food: " + getCategoryTotal("Food").toFixed(2);
+      document.getElementById("sumOther").textContent = "Other: " + getCategoryTotal("Other").toFixed(2);
+      document.getElementById("sumCount").textContent = "Entries: " + filtered.length;
+    }
+
+    document.getElementById("filterMonth")?.addEventListener("change", function() {
+      renderExpenseTable();
+      updateExpenseSummary();
+    });
+
+    document.getElementById("filterPerson")?.addEventListener("change", function() {
+      renderExpenseTable();
+      updateExpenseSummary();
+    });
+
+    document.getElementById("filterCategory")?.addEventListener("change", function() {
+      renderExpenseTable();
+      updateExpenseSummary();
+    });
+
+    window.addEventListener("load", function () {
+      const today = new Date();
+      const currentMonth = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
+      const monthInput = document.getElementById("filterMonth");
+      const dateInput = document.getElementById("expenseDate");
+
+      if (monthInput) monthInput.value = currentMonth;
+      if (dateInput) dateInput.value = today.toISOString().split("T")[0];
+
+      loadPersonFilter();
+      renderExpenseTable();
+      updateExpenseSummary();
+    });
+  </script>
+</body>
+</html>
+>>>>>>> c250111e91ee99b4f18aa97f64cbec98622dd916
