@@ -26,16 +26,25 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "..")));
 
-const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: Number(process.env.MYSQLPORT || 3306),
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+// =========================
+// DATABASE POOL
+// =========================
+const dbConfig = process.env.DATABASE_URL
+  ? { uri: process.env.DATABASE_URL }
+  : {
+      host: process.env.MYSQLHOST,
+      user: process.env.MYSQLUSER,
+      password: process.env.MYSQLPASSWORD,
+      database: process.env.MYSQLDATABASE,
+      port: Number(process.env.MYSQLPORT || 3306),
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    };
+
+const pool = dbConfig.uri
+  ? mysql.createPool(dbConfig.uri)
+  : mysql.createPool(dbConfig);
 
 function format3(value) {
   const n = Number(value || 0);
