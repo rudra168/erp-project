@@ -1133,44 +1133,49 @@
     }
 
     function moveNextOnEnter() {
-      const fields = [
-        "stickerSerial",
-        "stickerProductName",
-        "stickerPurity",
-        "stickerSku",
-        "stickerMM",
-        "stickerSize",
-        "stickerWeight"
-      ];
+  const fields = [
+    "stickerSerial",
+    "stickerProductName",
+    "stickerPurity",
+    "stickerSku",
+    "stickerMM",
+    "stickerSize",
+    "stickerWeight"
+  ];
 
-      fields.forEach((id, index) => {
-        const el = document.getElementById(id);
-        if (!el) return;
+  fields.forEach((id, index) => {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-        el.addEventListener("keydown", function (e) {
-          if (e.key === "Enter") {
-            e.preventDefault();
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
 
-            if (id === "stickerWeight") {
-              if (!document.getElementById("stickerBarcode").value.trim()) {
-                generateBarcodeNow(false);
-              }
+        // 🔥 LAST FIELD = WEIGHT
+        if (id === "stickerWeight") {
 
-              setTimeout(() => {
-                addStickerItem();
-              }, 100);
+          // ❌ save nahi karna
 
-              return;
-            }
+          // ✅ SERIAL +1
+          const serialInput = document.getElementById("stickerSerial");
+          serialInput.value = Number(serialInput.value || 0) + 1;
 
-            const nextId = fields[index + 1];
-            const nextEl = document.getElementById(nextId);
-            if (nextEl) nextEl.focus();
-          }
-        });
-      });
-    }
+          // ✅ SIRF WEIGHT CLEAR
+          document.getElementById("stickerWeight").value = "";
 
+          document.getElementById("stickerWeight").focus();
+
+          return;
+        }
+
+        // normal next field move
+        const nextId = fields[index + 1];
+        const nextEl = document.getElementById(nextId);
+        if (nextEl) nextEl.focus();
+      }
+    });
+  });
+}
     window.addEventListener("load", function () {
       loadProcessTypeOptions();
       loadFromServer();
