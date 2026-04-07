@@ -26,7 +26,7 @@
       color: #fff;
       font-size: 14px;
       font-weight: 600;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
       animation: slideInToast 0.25s ease;
     }
 
@@ -71,7 +71,7 @@
     .inline-row-actions {
       display: flex;
       gap: 6px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
     }
 
@@ -84,6 +84,7 @@
       cursor: pointer;
       font-size: 12px;
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .inline-cancel-btn {
@@ -95,6 +96,7 @@
       cursor: pointer;
       font-size: 12px;
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .edit-btn,
@@ -103,6 +105,7 @@
     .add-btn {
       background: linear-gradient(180deg, #d9ae67, #bb8134) !important;
       color: #fff !important;
+      white-space: nowrap;
     }
 
     .delete-icon-btn {
@@ -117,6 +120,7 @@
       align-items: center;
       justify-content: center;
       font-size: 13px;
+      flex-shrink: 0;
     }
 
     .delete-icon-btn:hover {
@@ -176,7 +180,19 @@
       display: flex;
       gap: 6px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+    }
+
+    .action-wrap .mini-btn,
+    .action-wrap .delete-icon-btn {
+      margin: 0;
+    }
+
+    #stickerListBody td:last-child,
+    #stickerListBody th:last-child {
+      min-width: 130px;
+      white-space: nowrap;
     }
   </style>
 
