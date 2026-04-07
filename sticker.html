@@ -53,22 +53,6 @@
       }
     }
 
-    .history-action-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-
-    .barcode-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .barcode-row input {
-      flex: 1;
-    }
-
     .inline-edit {
       width: 100%;
       padding: 8px 10px;
@@ -115,11 +99,7 @@
 
     .edit-btn,
     .new-btn,
-    .save-btn {
-      background: linear-gradient(180deg, #d9ae67, #bb8134) !important;
-      color: #fff !important;
-    }
-
+    .save-btn,
     .add-btn {
       background: linear-gradient(180deg, #d9ae67, #bb8134) !important;
       color: #fff !important;
@@ -164,6 +144,39 @@
       color: #7c5a1d;
       font-size: 13px;
       font-weight: 600;
+    }
+
+    .saved-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+
+    .unsaved-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #fff7ed;
+      color: #b45309;
+      border: 1px solid #fed7aa;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+
+    .action-wrap {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
     }
   </style>
 
@@ -301,14 +314,6 @@
               <input id="stickerWeight" placeholder="1.500" />
             </div>
 
-            <div class="input-box">
-              <label>Generate Barcode</label>
-              <div class="barcode-row">
-                <input id="barcodePreview" readonly placeholder="Barcode will appear" />
-                <button class="mini-btn" type="button" onclick="generateBarcodeNow()">Gen</button>
-              </div>
-            </div>
-
             <div class="btn-row" style="margin-top:10px;">
               <button class="mini-btn add-btn" type="button" onclick="addStickerItem()">Add Item</button>
             </div>
@@ -329,7 +334,7 @@
             </div>
 
             <div class="pending-note">
-              Weight pe Enter = Add Item. Lot/Product/Purity/SKU/MM/Size same rahega. Serial +1 hoga.
+              Weight pe Enter = auto barcode generate + Add Item. Save All ke baad bhi item Sticker List me rahega.
             </div>
           </div>
 
@@ -479,16 +484,13 @@
       return existsInStock || existsInPending;
     }
 
-    function generateBarcodeNow(showMessage = true, forceNew = false) {
+    function generateBarcodeNow(forceNew = false) {
       const barcodeField = document.getElementById("stickerBarcode");
-      const previewField = document.getElementById("barcodePreview");
-
-      if (!barcodeField || !previewField) return "";
+      if (!barcodeField) return "";
 
       const oldBarcode = barcodeField.value.trim();
 
       if (oldBarcode && !forceNew) {
-        previewField.value = oldBarcode;
         return oldBarcode;
       }
 
@@ -501,9 +503,6 @@
       }
 
       barcodeField.value = barcode;
-      previewField.value = barcode;
-
-      if (showMessage) showToast("Barcode generated", "success");
       return barcode;
     }
 
@@ -623,14 +622,14 @@
     function keepFieldsAndPrepareNext() {
       const serialInput = document.getElementById("stickerSerial");
       const weightInput = document.getElementById("stickerWeight");
+      const barcodeInput = document.getElementById("stickerBarcode");
 
       const currentSerial = Number(serialInput.value || 0);
       serialInput.value = String(isNaN(currentSerial) ? 1 : currentSerial + 1);
 
       weightInput.value = "";
-      document.getElementById("stickerBarcode").value = "";
-      document.getElementById("barcodePreview").value = "";
-      generateBarcodeNow(false, true);
+      barcodeInput.value = "";
+      generateBarcodeNow(true);
 
       weightInput.focus();
     }
@@ -644,9 +643,8 @@
       }
 
       if (!data.barcode) {
-        const autoBarcode = generateBarcodeNow(false, true);
+        const autoBarcode = generateBarcodeNow(true);
         document.getElementById("stickerBarcode").value = autoBarcode;
-        document.getElementById("barcodePreview").value = autoBarcode;
         data = getStickerFormData();
       }
 
@@ -656,9 +654,8 @@
       }
 
       if (isDuplicateBarcodeEverywhere(data.barcode)) {
-        const newBarcode = generateBarcodeNow(false, true);
+        const newBarcode = generateBarcodeNow(true);
         document.getElementById("stickerBarcode").value = newBarcode;
-        document.getElementById("barcodePreview").value = newBarcode;
         data = getStickerFormData();
 
         if (isDuplicateBarcodeEverywhere(data.barcode)) {
@@ -684,7 +681,8 @@
         process_type: data.processType,
         barcode: data.barcode,
         status: "PENDING",
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        saved_to_server: false
       });
 
       savePendingLocal();
@@ -694,13 +692,15 @@
     }
 
     async function savePendingToServer() {
-      if (!pendingStickerItems.length) {
-        showToast("Save karne ke liye koi pending item nahi hai", "error");
+      const unsavedItems = pendingStickerItems.filter(item => !item.saved_to_server);
+
+      if (!unsavedItems.length) {
+        showToast("Koi naya unsaved item nahi hai", "info");
         return;
       }
 
       try {
-        for (const item of pendingStickerItems) {
+        for (const item of unsavedItems) {
           const payload = {
             serial: item.serial,
             productName: item.product_name || item.productName || "",
@@ -729,13 +729,16 @@
           }
         }
 
-        pendingStickerItems = [];
+        pendingStickerItems = pendingStickerItems.map(item =>
+          unsavedItems.some(u => u.barcode === item.barcode)
+            ? { ...item, saved_to_server: true }
+            : item
+        );
+
         savePendingLocal();
         await loadFromServer();
         renderStickerList();
-        updateNextSerialForCurrentLot();
-        generateBarcodeNow(false, true);
-        showToast("Sab item stock me save ho gaya ✅", "success");
+        showToast("Sab new item stock me save ho gaya ✅", "success");
       } catch (err) {
         console.log("Bulk save error:", err);
         showToast("Server save error", "error");
@@ -807,7 +810,8 @@
             metal_type: data.metalType,
             processType: data.processType,
             process_type: data.processType,
-            barcode: data.barcode
+            barcode: data.barcode,
+            saved_to_server: false
           };
         }
         return item;
@@ -816,7 +820,7 @@
       editingPendingBarcode = null;
       savePendingLocal();
       renderStickerList();
-      showToast("Pending item updated", "success");
+      showToast("Pending item updated. Save All phir se dabana hoga", "success");
     }
 
     function attachInlineRowEvents() {
@@ -860,13 +864,16 @@
       let totalWeight = 0;
 
       if (!pendingStickerItems.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No pending sticker items found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No sticker items found</td></tr>`;
       }
 
       pendingStickerItems.forEach((item, index) => {
         totalWeight += Number(item.weight || 0);
         const itemBarcode = getBarcodeValue(item);
         const isEditing = editingPendingBarcode === itemBarcode;
+        const badge = item.saved_to_server
+          ? `<span class="saved-badge">Saved</span>`
+          : `<span class="unsaved-badge">Unsaved</span>`;
 
         if (isEditing) {
           tbody.innerHTML += `
@@ -894,17 +901,19 @@
           tbody.innerHTML += `
             <tr>
               <td>${item.serial || ""}</td>
-              <td>${item.product_name || item.productName || ""}</td>
+              <td>${item.product_name || item.productName || ""}${badge}</td>
               <td>${item.purity || ""}</td>
               <td>${item.sku || ""}</td>
               <td>${item.mm || ""}</td>
               <td>${item.size || ""}</td>
               <td>${format3(item.weight || 0)}</td>
-              <td style="display:flex; gap:6px; align-items:center;">
-                <button type="button" class="mini-btn edit-btn" onclick="startInlineEdit('${itemBarcode}')">Edit</button>
-                <button type="button" class="delete-icon-btn" onclick="deleteStickerByIndex(${index})" title="Delete">
-                  <i class="fas fa-trash"></i>
-                </button>
+              <td>
+                <div class="action-wrap">
+                  <button type="button" class="mini-btn edit-btn" onclick="startInlineEdit('${itemBarcode}')">Edit</button>
+                  <button type="button" class="delete-icon-btn" onclick="deleteStickerByIndex(${index})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           `;
@@ -967,7 +976,7 @@
       const visibleItems = [...pendingStickerItems].reverse();
 
       if (!visibleItems.length) {
-        showToast("Print ke liye pending sticker items nahi hai", "error");
+        showToast("Print ke liye sticker items nahi hai", "error");
         return;
       }
 
@@ -1236,7 +1245,7 @@
         updateNextSerialForCurrentLot();
       }
 
-      generateBarcodeNow(false, true);
+      generateBarcodeNow(true);
       moveNextOnEnter();
 
       document.getElementById("lotSelector")?.addEventListener("input", function () {
