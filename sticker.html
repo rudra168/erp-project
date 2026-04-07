@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -235,8 +234,7 @@
         <input type="hidden" id="stickerBarcode" />
         <input type="hidden" id="editStickerBarcode" />
 
-        <div class="compact-grid" style="margin-top:14px;">
-          <!-- LEFT FORM -->
+;        <div class="compact-grid" style="margin-top:14px;">
           <div class="compact-box compact-form">
             <div class="input-box">
               <label for="stickerSerial">Serial Number</label>
@@ -281,8 +279,7 @@
               </div>
             </div>
 
-            <div class="btn-row">
-              <button class="mini-btn add-btn" type="button" onclick="addStickerItem()">Add Item</button>
+            <div class="btn-row">              <button class="mini-btn add-btn" type="button" onclick="addStickerItem()">Save</button>
             </div>
 
             <div class="input-box" style="margin-top:12px;">
@@ -300,7 +297,7 @@
             </div>
           </div>
 
-          <!-- CENTER TABLE -->
+
           <div class="compact-box">
             <h3 id="totalStickerWeight">Sticker List (Total Weight: 0.000)</h3>
 
@@ -323,7 +320,6 @@
             </div>
           </div>
 
-          <!-- RIGHT HISTORY -->
           <div class="compact-box">
             <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
               <select id="historyType" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
@@ -342,7 +338,7 @@
   <div id="toastBox" class="toast-box"></div>
 
   <script>
-  const API_BASE = "https://erp-backend-5ya9.onrender.com";
+    const API_BASE = "https://erp-backend-5ya9.onrender.com";
 
     let stockItems = [];
     let hiddenDeletedBarcodes = JSON.parse(localStorage.getItem("hiddenDeletedBarcodes")) || [];
@@ -385,16 +381,28 @@
       return "B" + String(Date.now()).slice(-5) + Math.floor(Math.random() * 10);
     }
 
-    function generateBarcodeNow(showMessage = true) {
-      const oldBarcode = document.getElementById("stickerBarcode").value.trim();
-      if (oldBarcode) {
-        document.getElementById("barcodePreview").value = oldBarcode;
+    function generateBarcodeNow(showMessage = true, forceNew = false) {
+      const barcodeField = document.getElementById("stickerBarcode");
+      const previewField = document.getElementById("barcodePreview");
+
+      const oldBarcode = barcodeField.value.trim();
+
+      if (oldBarcode && !forceNew) {
+        previewField.value = oldBarcode;
         return oldBarcode;
       }
 
-      const barcode = generateUniqueBarcode();
-      document.getElementById("stickerBarcode").value = barcode;
-      document.getElementById("barcodePreview").value = barcode;
+      let barcode = generateUniqueBarcode();
+      let tries = 0;
+
+      while (isDuplicateBarcode(barcode) && tries < 30) {
+        barcode = generateUniqueBarcode();
+        tries++;
+      }
+
+      barcodeField.value = barcode;
+      previewField.value = barcode;
+
       if (showMessage) showToast("Barcode generated", "success");
       return barcode;
     }
@@ -558,7 +566,7 @@
     }
 
     async function addStickerItem() {
-      const data = getStickerFormData();
+      let data = getStickerFormData();
 
       if (!data.serial || !data.productName || !data.purity || !data.sku || !data.size || !data.weight || !data.lot) {
         showToast("Serial, Product, Purity, SKU, Size, Weight aur Lot Number daalo", "error");
@@ -566,8 +574,10 @@
       }
 
       if (!data.barcode) {
-        showToast("Pehle barcode generate karo", "error");
-        return;
+        const autoBarcode = generateBarcodeNow(false, true);
+        document.getElementById("stickerBarcode").value = autoBarcode;
+        document.getElementById("barcodePreview").value = autoBarcode;
+        data = getStickerFormData();
       }
 
       if (isDuplicateLotSerial(data.lot, data.serial)) {
@@ -576,8 +586,15 @@
       }
 
       if (isDuplicateBarcode(data.barcode)) {
-        showToast(`Barcode ${data.barcode} pehle se exist hai`, "error");
-        return;
+        const freshBarcode = generateBarcodeNow(false, true);
+        document.getElementById("stickerBarcode").value = freshBarcode;
+        document.getElementById("barcodePreview").value = freshBarcode;
+        data = getStickerFormData();
+
+        if (isDuplicateBarcode(data.barcode)) {
+          showToast(`Barcode ${data.barcode} pehle se exist hai`, "error");
+          return;
+        }
       }
 
       try {
@@ -590,12 +607,8 @@
         const result = await res.json();
 
         if (result.success) {
-          const currentSerial = Number(data.serial || 0);
-          const nextSerial = !isNaN(currentSerial) && currentSerial > 0 ? currentSerial + 1 : "";
           await loadFromServer();
-          resetAddFormAfterSave(nextSerial);
-          syncLotPreview();
-          showToast("Sticker saved successfully", "success");
+          showToast("Saved & added to stock ✅", "success");
           document.getElementById("stickerWeight")?.focus();
         } else {
           showToast(result.message || "Database save failed", "error");
@@ -678,10 +691,12 @@
         input.addEventListener("keydown", function (e) {
           const row = e.target.closest("tr");
           const oldBarcode = row?.dataset.editingBarcode || "";
+
           if (e.key === "Enter") {
             e.preventDefault();
             saveInlineEdit(oldBarcode);
           }
+
           if (e.key === "Escape") {
             e.preventDefault();
             cancelInlineEdit();
@@ -923,7 +938,9 @@
           html += `<div class="label empty"></div>`;
         } else {
           const item = visibleItems[itemIndex];
-          const itemWeight = format3(item.weight || 0);
+          const extraWeight = Number(document.getElementById("printExtraWeight")?.value || 0);
+          const actualWeight = Number(item.weight || 0) + extraWeight;
+          const itemWeight = format3(actualWeight);
           const itemSize = String(item.size || "").trim();
           const itemPurity = String(item.purity || "").trim();
           const itemBarcode = String(item.barcode || "").trim();
@@ -1133,54 +1150,51 @@
     }
 
     function moveNextOnEnter() {
-  const fields = [
-    "stickerSerial",
-    "stickerProductName",
-    "stickerPurity",
-    "stickerSku",
-    "stickerMM",
-    "stickerSize",
-    "stickerWeight"
-  ];
+      const fields = [
+        "stickerSerial",
+        "stickerProductName",
+        "stickerPurity",
+        "stickerSku",
+        "stickerMM",
+        "stickerSize",
+        "stickerWeight"
+      ];
 
-  fields.forEach((id, index) => {
-    const el = document.getElementById(id);
-    if (!el) return;
+      fields.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
 
-    el.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
+        el.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
 
-        // 🔥 LAST FIELD = WEIGHT
-        if (id === "stickerWeight") {
+            if (id === "stickerWeight") {
+              const serialInput = document.getElementById("stickerSerial");
+              const currentSerial = Number(serialInput.value || 0);
+              serialInput.value = isNaN(currentSerial) ? "1" : String(currentSerial + 1);
 
-          // ❌ save nahi karna
+              document.getElementById("stickerWeight").value = "";
 
-          // ✅ SERIAL +1
-          const serialInput = document.getElementById("stickerSerial");
-          serialInput.value = Number(serialInput.value || 0) + 1;
+              generateBarcodeNow(false, true);
 
-          // ✅ SIRF WEIGHT CLEAR
-          document.getElementById("stickerWeight").value = "";
+              document.getElementById("stickerWeight").focus();
+              return;
+            }
 
-          document.getElementById("stickerWeight").focus();
+            const nextId = fields[index + 1];
+            const nextEl = document.getElementById(nextId);
+            if (nextEl) nextEl.focus();
+          }
+        });
+      });
+    }
 
-          return;
-        }
-
-        // normal next field move
-        const nextId = fields[index + 1];
-        const nextEl = document.getElementById(nextId);
-        if (nextEl) nextEl.focus();
-      }
-    });
-  });
-}
     window.addEventListener("load", function () {
       loadProcessTypeOptions();
       loadFromServer();
       syncLotPreview();
       resetAddFormAfterSave("");
+      generateBarcodeNow(false, true);
       moveNextOnEnter();
     });
   </script>
