@@ -120,6 +120,11 @@
       color: #fff !important;
     }
 
+    .add-btn {
+      background: linear-gradient(180deg, #d9ae67, #bb8134) !important;
+      color: #fff !important;
+    }
+
     .delete-icon-btn {
       width: 34px;
       height: 34px;
@@ -148,6 +153,17 @@
     .print-action-row button {
       flex: 1;
       min-width: 140px;
+    }
+
+    .pending-note {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff8eb;
+      border: 1px solid #ecd5a5;
+      color: #7c5a1d;
+      font-size: 13px;
+      font-weight: 600;
     }
   </style>
 
@@ -249,11 +265,10 @@
         <input type="hidden" id="editStickerBarcode" />
 
         <div class="compact-grid" style="margin-top:14px;">
-          <!-- FORM BOX -->
           <div class="compact-box compact-form">
             <div class="input-box">
               <label for="stickerSerial">Serial Number</label>
-              <input id="stickerSerial" />
+              <input id="stickerSerial" type="number" />
             </div>
 
             <div class="input-box">
@@ -294,6 +309,10 @@
               </div>
             </div>
 
+            <div class="btn-row" style="margin-top:10px;">
+              <button class="mini-btn add-btn" type="button" onclick="addStickerItem()">Add Item</button>
+            </div>
+
             <div class="input-box" style="margin-top:12px;">
               <label for="startFrom">Print Start From</label>
               <input type="number" id="startFrom" min="1" max="108" value="1" placeholder="e.g. 11" />
@@ -305,12 +324,15 @@
             </div>
 
             <div class="print-action-row">
-              <button class="primary-btn save-btn" type="button" onclick="addStickerItem()">Save</button>
+              <button class="primary-btn save-btn" type="button" onclick="savePendingToServer()">Save All</button>
               <button class="primary-btn" type="button" onclick="printStickerSheet()">Print Sticker</button>
+            </div>
+
+            <div class="pending-note">
+              Weight pe Enter = Add Item. Lot/Product/Purity/SKU/MM/Size same rahega. Serial +1 hoga.
             </div>
           </div>
 
-          <!-- STICKER LIST BOX -->
           <div class="compact-box">
             <h3 id="totalStickerWeight">Sticker List Total Weight: 0.000</h3>
 
@@ -333,11 +355,10 @@
             </div>
           </div>
 
-          <!-- HISTORY BOX -->
           <div class="compact-box">
             <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
               <select id="historyType" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
-                <option>Block History</option>
+                <option>Saved Stock History</option>
               </select>
               <button class="mini-btn" type="button" style="min-width:44px; padding:10px;" onclick="renderHistory()">↻</button>
             </div>
@@ -355,10 +376,9 @@
     const API_BASE = "https://erp-backend-5ya9.onrender.com";
 
     let stockItems = [];
-    let hiddenDeletedBarcodes = JSON.parse(localStorage.getItem("hiddenDeletedBarcodes")) || [];
-    let deletedStickerHistory = JSON.parse(localStorage.getItem("deletedStickerHistory")) || [];
+    let pendingStickerItems = JSON.parse(localStorage.getItem("pendingStickerItems")) || [];
     let processTypes = JSON.parse(localStorage.getItem("processTypes")) || ["MixOrnaments", "Sankha", "Pola"];
-    let editingBarcodeInline = null;
+    let editingPendingBarcode = null;
 
     function showToast(message, type = "success") {
       const box = document.getElementById("toastBox");
@@ -380,6 +400,10 @@
       }, 2600);
     }
 
+    function savePendingLocal() {
+      localStorage.setItem("pendingStickerItems", JSON.stringify(pendingStickerItems));
+    }
+
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       if (sidebar) sidebar.classList.toggle("collapsed");
@@ -388,10 +412,6 @@
     function format3(value) {
       const n = Number(value || 0);
       return isNaN(n) ? "0.000" : n.toFixed(3);
-    }
-
-    function generateUniqueBarcode() {
-      return "B" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 10);
     }
 
     function normalizeText(value) {
@@ -410,13 +430,53 @@
       return normalizeText(item.barcode || "");
     }
 
-    function isDuplicateBarcode(barcode, ignoreBarcode = "") {
-      return stockItems.some((item) => {
+    function generateUniqueBarcode() {
+      return "B" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 10);
+    }
+
+    function isDuplicateBarcodeEverywhere(barcode, ignoreBarcode = "") {
+      const cleanBarcode = normalizeText(barcode);
+      const cleanIgnore = normalizeText(ignoreBarcode);
+
+      const existsInStock = stockItems.some((item) => {
+        const itemBarcode = getBarcodeValue(item);
+        const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
+        return statusOk && itemBarcode === cleanBarcode && itemBarcode !== cleanIgnore;
+      });
+
+      const existsInPending = pendingStickerItems.some((item) => {
+        const itemBarcode = getBarcodeValue(item);
+        return itemBarcode === cleanBarcode && itemBarcode !== cleanIgnore;
+      });
+
+      return existsInStock || existsInPending;
+    }
+
+    function isDuplicateLotSerialEverywhere(lot, serial, ignoreBarcode = "") {
+      const cleanLot = normalizeText(lot);
+      const numSerial = Number(serial);
+      const cleanIgnore = normalizeText(ignoreBarcode);
+
+      const existsInStock = stockItems.some((item) => {
         const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
         if (!statusOk) return false;
-        const itemBarcode = getBarcodeValue(item);
-        return itemBarcode === normalizeText(barcode) && itemBarcode !== normalizeText(ignoreBarcode);
+
+        return (
+          getLotValue(item) === cleanLot &&
+          getSerialValue(item) === numSerial &&
+          getBarcodeValue(item) !== cleanIgnore
+        );
       });
+
+      const existsInPending = pendingStickerItems.some((item) => {
+        return (
+          getLotValue(item) === cleanLot &&
+          getSerialValue(item) === numSerial &&
+          getBarcodeValue(item) !== cleanIgnore
+        );
+      });
+
+      return existsInStock || existsInPending;
     }
 
     function generateBarcodeNow(showMessage = true, forceNew = false) {
@@ -435,7 +495,7 @@
       let barcode = generateUniqueBarcode();
       let tries = 0;
 
-      while (isDuplicateBarcode(barcode) && tries < 50) {
+      while (isDuplicateBarcodeEverywhere(barcode) && tries < 50) {
         barcode = generateUniqueBarcode();
         tries++;
       }
@@ -461,9 +521,7 @@
 
       if (selectedValue && processTypes.includes(selectedValue)) {
         select.value = selectedValue;
-      }
-
-      if (!selectedValue && processTypes.length) {
+      } else if (processTypes.length) {
         select.value = processTypes[0];
       }
     }
@@ -502,6 +560,7 @@
       const lotSelector = document.getElementById("lotSelector");
       if (lotSelector) lotSelector.value = lotNo;
       syncLotPreview();
+      updateNextSerialForCurrentLot();
     }
 
     function getStickerFormData() {
@@ -520,42 +579,11 @@
       };
     }
 
-    function getVisibleItemsSorted() {
-      return stockItems
-        .filter((item) => {
-          const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
-          const notHidden = !hiddenDeletedBarcodes.includes(getBarcodeValue(item));
-          return statusOk && notHidden;
-        })
-        .sort((a, b) => {
-          const lotCompare = getLotValue(a).localeCompare(getLotValue(b), undefined, {
-            numeric: true,
-            sensitivity: "base"
-          });
-          if (lotCompare !== 0) return lotCompare;
-          return getSerialValue(a) - getSerialValue(b);
-        });
-    }
-
-    function isDuplicateLotSerial(lot, serial, ignoreBarcode = "") {
-      return stockItems.some((item) => {
-        const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
-        if (!statusOk) return false;
-
-        return (
-          getLotValue(item) === normalizeText(lot) &&
-          getSerialValue(item) === Number(serial) &&
-          getBarcodeValue(item) !== normalizeText(ignoreBarcode)
-        );
-      });
-    }
-
     async function loadFromServer() {
       try {
         const res = await fetch(`${API_BASE}/getStock`, { cache: "no-store" });
         const data = await res.json();
         stockItems = Array.isArray(data) ? data : [];
-        renderStickerList();
         renderHistory();
       } catch (err) {
         console.log("Load error:", err);
@@ -564,40 +592,50 @@
     }
 
     function getNextSerialForLot(lot) {
-      const filtered = stockItems.filter((item) => {
-        return (
-          String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK" &&
-          getLotValue(item) === normalizeText(lot)
-        );
+      const cleanLot = normalizeText(lot);
+      let maxSerial = 0;
+
+      stockItems.forEach((item) => {
+        const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
+        if (statusOk && getLotValue(item) === cleanLot) {
+          maxSerial = Math.max(maxSerial, getSerialValue(item));
+        }
       });
 
-      if (!filtered.length) return 1;
+      pendingStickerItems.forEach((item) => {
+        if (getLotValue(item) === cleanLot) {
+          maxSerial = Math.max(maxSerial, getSerialValue(item));
+        }
+      });
 
-      const maxSerial = Math.max(...filtered.map((item) => Number(item.serial || 0)));
       return maxSerial + 1;
     }
 
-    function resetAddFormAfterSave() {
+    function updateNextSerialForCurrentLot() {
       const lot = document.getElementById("lotSelector")?.value.trim() || "";
-      const nextSerial = getNextSerialForLot(lot);
-
-      document.getElementById("stickerSerial").value = String(nextSerial);
-      document.getElementById("stickerProductName").value = "";
-      document.getElementById("stickerPurity").value = "";
-      document.getElementById("stickerSku").value = "";
-      document.getElementById("stickerMM").value = "";
-      document.getElementById("stickerSize").value = "";
-      document.getElementById("stickerWeight").value = "";
-      document.getElementById("stickerBarcode").value = "";
-      document.getElementById("editStickerBarcode").value = "";
-      document.getElementById("barcodePreview").value = "";
-      document.getElementById("printExtraWeight").value = "";
-
-      generateBarcodeNow(false, true);
-      document.getElementById("stickerProductName")?.focus();
+      if (!lot) {
+        document.getElementById("stickerSerial").value = "";
+        return;
+      }
+      document.getElementById("stickerSerial").value = String(getNextSerialForLot(lot));
     }
 
-    async function addStickerItem() {
+    function keepFieldsAndPrepareNext() {
+      const serialInput = document.getElementById("stickerSerial");
+      const weightInput = document.getElementById("stickerWeight");
+
+      const currentSerial = Number(serialInput.value || 0);
+      serialInput.value = String(isNaN(currentSerial) ? 1 : currentSerial + 1);
+
+      weightInput.value = "";
+      document.getElementById("stickerBarcode").value = "";
+      document.getElementById("barcodePreview").value = "";
+      generateBarcodeNow(false, true);
+
+      weightInput.focus();
+    }
+
+    function addStickerItem() {
       let data = getStickerFormData();
 
       if (!data.serial || !data.productName || !data.purity || !data.sku || !data.size || !data.weight || !data.lot) {
@@ -612,50 +650,105 @@
         data = getStickerFormData();
       }
 
-      if (isDuplicateLotSerial(data.lot, data.serial)) {
+      if (isDuplicateLotSerialEverywhere(data.lot, data.serial)) {
         showToast(`Lot ${data.lot} me serial ${data.serial} pehle se exist hai`, "error");
         return;
       }
 
-      if (isDuplicateBarcode(data.barcode)) {
-        generateBarcodeNow(false, true);
+      if (isDuplicateBarcodeEverywhere(data.barcode)) {
+        const newBarcode = generateBarcodeNow(false, true);
+        document.getElementById("stickerBarcode").value = newBarcode;
+        document.getElementById("barcodePreview").value = newBarcode;
         data = getStickerFormData();
 
-        if (isDuplicateBarcode(data.barcode)) {
-          showToast(`Barcode ${data.barcode} pehle se exist hai`, "error");
+        if (isDuplicateBarcodeEverywhere(data.barcode)) {
+          showToast("Barcode duplicate aa raha hai", "error");
           return;
         }
       }
 
+      pendingStickerItems.push({
+        serial: Number(data.serial),
+        product_name: data.productName,
+        productName: data.productName,
+        purity: data.purity,
+        sku: data.sku,
+        mm: data.mm,
+        size: data.size,
+        weight: format3(data.weight),
+        lot: data.lot,
+        lot_number: data.lot,
+        metalType: data.metalType,
+        metal_type: data.metalType,
+        processType: data.processType,
+        process_type: data.processType,
+        barcode: data.barcode,
+        status: "PENDING",
+        created_at: new Date().toISOString()
+      });
+
+      savePendingLocal();
+      renderStickerList();
+      keepFieldsAndPrepareNext();
+      showToast("Item sticker list me add ho gaya", "success");
+    }
+
+    async function savePendingToServer() {
+      if (!pendingStickerItems.length) {
+        showToast("Save karne ke liye koi pending item nahi hai", "error");
+        return;
+      }
+
       try {
-        const res = await fetch(`${API_BASE}/addSticker`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
+        for (const item of pendingStickerItems) {
+          const payload = {
+            serial: item.serial,
+            productName: item.product_name || item.productName || "",
+            purity: item.purity || "",
+            sku: item.sku || "",
+            mm: item.mm || "",
+            size: item.size || "",
+            weight: format3(item.weight || 0),
+            lot: item.lot_number || item.lot || "",
+            metalType: item.metal_type || item.metalType || "Silver",
+            processType: item.process_type || item.processType || "",
+            barcode: item.barcode || ""
+          };
 
-        const result = await res.json();
+          const res = await fetch(`${API_BASE}/addSticker`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
 
-        if (result.success) {
-          await loadFromServer();
-          resetAddFormAfterSave();
-          showToast("Saved & added to stock ✅", "success");
-        } else {
-          showToast(result.message || "Database save failed", "error");
+          const result = await res.json();
+
+          if (!result.success) {
+            showToast(result.message || "Kuch item save nahi hua", "error");
+            return;
+          }
         }
+
+        pendingStickerItems = [];
+        savePendingLocal();
+        await loadFromServer();
+        renderStickerList();
+        updateNextSerialForCurrentLot();
+        generateBarcodeNow(false, true);
+        showToast("Sab item stock me save ho gaya ✅", "success");
       } catch (err) {
-        console.log("Save error:", err);
-        showToast("Server connection error", "error");
+        console.log("Bulk save error:", err);
+        showToast("Server save error", "error");
       }
     }
 
     function startInlineEdit(barcode) {
-      editingBarcodeInline = barcode;
+      editingPendingBarcode = barcode;
       renderStickerList();
     }
 
     function cancelInlineEdit() {
-      editingBarcodeInline = null;
+      editingPendingBarcode = null;
       renderStickerList();
     }
 
@@ -671,11 +764,11 @@
         lot: row.querySelector('[data-field="lot_number"]')?.value.trim() || "",
         metalType: row.querySelector('[data-field="metal_type"]')?.value.trim() || "",
         processType: row.querySelector('[data-field="process_type"]')?.value.trim() || "",
-        barcode: oldBarcode
+        barcode: row.querySelector('[data-field="barcode"]')?.value.trim() || oldBarcode
       };
     }
 
-    async function saveInlineEdit(oldBarcode) {
+    function saveInlineEdit(oldBarcode) {
       const row = document.querySelector(`tr[data-editing-barcode="${oldBarcode}"]`);
       if (!row) return;
 
@@ -686,31 +779,44 @@
         return;
       }
 
-      if (isDuplicateLotSerial(data.lot, data.serial, oldBarcode)) {
+      if (isDuplicateLotSerialEverywhere(data.lot, data.serial, oldBarcode)) {
         showToast(`Lot ${data.lot} me serial ${data.serial} pehle se exist hai`, "error");
         return;
       }
 
-      try {
-        const res = await fetch(`${API_BASE}/updateSticker/${oldBarcode}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
-
-        const result = await res.json();
-
-        if (result.success) {
-          editingBarcodeInline = null;
-          await loadFromServer();
-          showToast("Sticker updated successfully", "success");
-        } else {
-          showToast(result.message || "Update failed", "error");
-        }
-      } catch (err) {
-        console.log("Update error:", err);
-        showToast("Server update error", "error");
+      if (isDuplicateBarcodeEverywhere(data.barcode, oldBarcode)) {
+        showToast("Barcode duplicate hai", "error");
+        return;
       }
+
+      pendingStickerItems = pendingStickerItems.map((item) => {
+        if (String(item.barcode || "").trim() === String(oldBarcode).trim()) {
+          return {
+            ...item,
+            serial: Number(data.serial),
+            product_name: data.productName,
+            productName: data.productName,
+            purity: data.purity,
+            sku: data.sku,
+            mm: data.mm,
+            size: data.size,
+            weight: format3(data.weight),
+            lot: data.lot,
+            lot_number: data.lot,
+            metalType: data.metalType,
+            metal_type: data.metalType,
+            processType: data.processType,
+            process_type: data.processType,
+            barcode: data.barcode
+          };
+        }
+        return item;
+      });
+
+      editingPendingBarcode = null;
+      savePendingLocal();
+      renderStickerList();
+      showToast("Pending item updated", "success");
     }
 
     function attachInlineRowEvents() {
@@ -735,72 +841,14 @@
       if (firstInput) firstInput.focus();
     }
 
-    async function deleteStickerByIndex(index) {
-      const visibleItems = getVisibleItemsSorted();
-      const item = visibleItems[index];
+    function deleteStickerByIndex(index) {
+      const item = pendingStickerItems[index];
       if (!item) return;
 
-      const barcode = String(item.barcode || "").trim();
-      if (!barcode) {
-        showToast("Barcode missing hai", "error");
-        return;
-      }
-
-      if (!hiddenDeletedBarcodes.includes(barcode)) {
-        hiddenDeletedBarcodes.push(barcode);
-      }
-
-      deletedStickerHistory.push({
-        ...item,
-        deletedAt: new Date().toLocaleString(),
-        deletedTs: Date.now(),
-        restored: false
-      });
-
-      localStorage.setItem("hiddenDeletedBarcodes", JSON.stringify(hiddenDeletedBarcodes));
-      localStorage.setItem("deletedStickerHistory", JSON.stringify(deletedStickerHistory));
-
+      pendingStickerItems.splice(index, 1);
+      savePendingLocal();
       renderStickerList();
-      renderHistory();
-      showToast("Sirf sticker list se delete hua, stock me safe hai", "success");
-    }
-
-    async function restoreStickerByBarcode(barcode) {
-      if (!barcode) return;
-
-      try {
-        const res = await fetch(`${API_BASE}/restoreSticker/${barcode}`, {
-          method: "PUT"
-        });
-
-        const result = await res.json();
-
-        if (result.success) {
-          hiddenDeletedBarcodes = hiddenDeletedBarcodes.filter((x) => x !== barcode);
-
-          deletedStickerHistory = deletedStickerHistory.map((item) => {
-            if (String(item.barcode || "").trim() === String(barcode).trim()) {
-              return {
-                ...item,
-                restored: true,
-                restoredAt: new Date().toLocaleString()
-              };
-            }
-            return item;
-          });
-
-          localStorage.setItem("hiddenDeletedBarcodes", JSON.stringify(hiddenDeletedBarcodes));
-          localStorage.setItem("deletedStickerHistory", JSON.stringify(deletedStickerHistory));
-
-          await loadFromServer();
-          showToast("Sticker restored successfully", "success");
-        } else {
-          showToast(result.message || "Restore failed", "error");
-        }
-      } catch (err) {
-        console.log("Restore error:", err);
-        showToast("Server restore error", "error");
-      }
+      showToast("Item sticker list se delete ho gaya", "success");
     }
 
     function renderStickerList() {
@@ -811,17 +859,14 @@
       tbody.innerHTML = "";
       let totalWeight = 0;
 
-      const visibleItems = getVisibleItemsSorted();
-
-      if (!visibleItems.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No sticker items found</td></tr>`;
+      if (!pendingStickerItems.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No pending sticker items found</td></tr>`;
       }
 
-      visibleItems.forEach((item, index) => {
+      pendingStickerItems.forEach((item, index) => {
         totalWeight += Number(item.weight || 0);
-
         const itemBarcode = getBarcodeValue(item);
-        const isEditing = editingBarcodeInline === itemBarcode;
+        const isEditing = editingPendingBarcode === itemBarcode;
 
         if (isEditing) {
           tbody.innerHTML += `
@@ -837,6 +882,7 @@
                 <input type="hidden" data-field="lot_number" value="${item.lot_number || item.lot || ""}">
                 <input type="hidden" data-field="metal_type" value="${item.metal_type || item.metalType || "Silver"}">
                 <input type="hidden" data-field="process_type" value="${item.process_type || item.processType || ""}">
+                <input type="hidden" data-field="barcode" value="${itemBarcode}">
                 <div class="inline-row-actions">
                   <button type="button" class="inline-save-btn" onclick="saveInlineEdit('${itemBarcode}')">Save</button>
                   <button type="button" class="inline-cancel-btn" onclick="cancelInlineEdit()">Cancel</button>
@@ -879,61 +925,33 @@
 
       historyList.innerHTML = "";
 
-      const activeHistory = stockItems
-        .filter((item) => String(item.status || "IN_STOCK").toUpperCase() !== "DELETED")
-        .map((item) => ({
-          type: "ACTIVE",
-          lot: item.lot_number || item.lot || "",
-          metalType: item.metal_type || item.metalType || "",
-          time: item.created_at || "",
-          ts: new Date(item.created_at || Date.now()).getTime(),
-          stickerCount: 1,
-          barcode: item.barcode || ""
-        }));
-
-      const deletedHistory = deletedStickerHistory.map((item) => ({
-        type: item.restored ? "RESTORED" : "DELETED",
-        lot: item.lot_number || item.lot || "",
-        metalType: item.metal_type || item.metalType || "",
-        time: item.restored ? item.restoredAt : item.deletedAt,
-        ts: item.restored ? (item.deletedTs || 0) + 1 : item.deletedTs || 0,
-        stickerCount: 1,
-        barcode: item.barcode || ""
-      }));
-
-      const merged = [...activeHistory, ...deletedHistory]
-        .sort((a, b) => b.ts - a.ts)
+      const latestItems = stockItems
+        .filter((item) => String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK")
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
         .slice(0, 10);
 
-      if (!merged.length) {
+      if (!latestItems.length) {
         historyList.innerHTML = `<div class="history-card"><p>No history found</p></div>`;
         return;
       }
 
-      merged.forEach((item) => {
-        const actionHtml =
-          item.type === "DELETED"
-            ? `<div class="history-action-row">
-                 <button class="mini-btn new-btn" type="button" onclick="restoreStickerByBarcode('${item.barcode}')">Restore</button>
-               </div>`
-            : "";
-
+      latestItems.forEach((item) => {
         historyList.innerHTML += `
           <div class="history-card" style="margin-bottom:10px;">
             <p>
-              <strong>Status:</strong> ${item.type}<br>
-              <strong>Lot Number:</strong> ${item.lot || "-"}<br>
-              <strong>Metal Type:</strong> ${item.metalType || "-"}<br>
-              <strong>Stickers Count:</strong> ${item.stickerCount || 1}<br>
-              <strong>Time:</strong> ${item.time || "-"}
+              <strong>Status:</strong> SAVED<br>
+              <strong>Lot Number:</strong> ${item.lot_number || item.lot || "-"}<br>
+              <strong>Metal Type:</strong> ${item.metal_type || item.metalType || "-"}<br>
+              <strong>Serial:</strong> ${item.serial || "-"}<br>
+              <strong>Barcode:</strong> ${item.barcode || "-"}<br>
+              <strong>Time:</strong> ${item.created_at || "-"}
             </p>
-            ${actionHtml}
           </div>
         `;
       });
     }
 
-    async function printStickerSheet() {
+    function printStickerSheet() {
       const rows = 18;
       const cols = 6;
       const total = rows * cols;
@@ -946,10 +964,10 @@
         Math.min(total, Number(document.getElementById("startFrom")?.value || 1))
       );
 
-      const visibleItems = getVisibleItemsSorted().reverse();
+      const visibleItems = [...pendingStickerItems].reverse();
 
       if (!visibleItems.length) {
-        showToast("No sticker items found", "error");
+        showToast("Print ke liye pending sticker items nahi hai", "error");
         return;
       }
 
@@ -1193,6 +1211,7 @@
         el.addEventListener("keydown", function (e) {
           if (e.key === "Enter") {
             e.preventDefault();
+            e.stopPropagation();
 
             if (id === "stickerWeight") {
               addStickerItem();
@@ -1207,23 +1226,22 @@
       });
     }
 
-    window.addEventListener("load", function () {
+    window.addEventListener("load", async function () {
       loadProcessTypeOptions();
       syncLotPreview();
-      loadFromServer().then(() => {
-        const lot = document.getElementById("lotSelector")?.value.trim() || "";
-        if (lot) {
-          document.getElementById("stickerSerial").value = String(getNextSerialForLot(lot));
-        }
-      });
+      renderStickerList();
+      await loadFromServer();
+
+      if (!document.getElementById("stickerSerial").value) {
+        updateNextSerialForCurrentLot();
+      }
 
       generateBarcodeNow(false, true);
       moveNextOnEnter();
 
       document.getElementById("lotSelector")?.addEventListener("input", function () {
-        const lot = this.value.trim();
-        document.getElementById("stickerSerial").value = String(getNextSerialForLot(lot));
         syncLotPreview();
+        updateNextSerialForCurrentLot();
       });
     });
   </script>
