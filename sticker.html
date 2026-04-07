@@ -6,6 +6,7 @@
   <title>Sticker ERP</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
   <style>
     .toast-box {
       position: fixed;
@@ -113,7 +114,8 @@
     }
 
     .edit-btn,
-    .new-btn {
+    .new-btn,
+    .save-btn {
       background: linear-gradient(180deg, #d9ae67, #bb8134) !important;
       color: #fff !important;
     }
@@ -134,6 +136,18 @@
 
     .delete-icon-btn:hover {
       opacity: 0.92;
+    }
+
+    .print-action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .print-action-row button {
+      flex: 1;
+      min-width: 140px;
     }
   </style>
 
@@ -234,7 +248,8 @@
         <input type="hidden" id="stickerBarcode" />
         <input type="hidden" id="editStickerBarcode" />
 
-;        <div class="compact-grid" style="margin-top:14px;">
+        <div class="compact-grid" style="margin-top:14px;">
+          <!-- FORM BOX -->
           <div class="compact-box compact-form">
             <div class="input-box">
               <label for="stickerSerial">Serial Number</label>
@@ -279,10 +294,6 @@
               </div>
             </div>
 
-            <div class="btn-row">
-  <button class="mini-btn add-btn" type="button" onclick="addStickerItem()">Add Item</button>
-</div>
-
             <div class="input-box" style="margin-top:12px;">
               <label for="startFrom">Print Start From</label>
               <input type="number" id="startFrom" min="1" max="108" value="1" placeholder="e.g. 11" />
@@ -293,14 +304,15 @@
               <input type="number" step="0.001" id="printExtraWeight" placeholder="0.000" />
             </div>
 
-            <div class="btn-row" style="margin-top:10px; display:flex; gap:10px;">
-  <button class="primary-btn" type="button" onclick="printStickerSheet()">Print Sticker</button>
+            <div class="print-action-row">
+              <button class="primary-btn save-btn" type="button" onclick="addStickerItem()">Save</button>
+              <button class="primary-btn" type="button" onclick="printStickerSheet()">Print Sticker</button>
+            </div>
+          </div>
 
-  <button class="mini-btn add-btn" type="button" onclick="addStickerItem()">Save</button>
-</div>
-
+          <!-- STICKER LIST BOX -->
           <div class="compact-box">
-            <h3 id="totalStickerWeight">Sticker List (Total Weight: 0.000)</h3>
+            <h3 id="totalStickerWeight">Sticker List Total Weight: 0.000</h3>
 
             <div class="table-wrap">
               <table>
@@ -321,6 +333,7 @@
             </div>
           </div>
 
+          <!-- HISTORY BOX -->
           <div class="compact-box">
             <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
               <select id="historyType" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
@@ -354,7 +367,6 @@
       const toast = document.createElement("div");
       toast.className = `toast ${type}`;
       toast.textContent = message;
-
       box.appendChild(toast);
 
       setTimeout(() => {
@@ -379,12 +391,39 @@
     }
 
     function generateUniqueBarcode() {
-      return "B" + String(Date.now()).slice(-5) + Math.floor(Math.random() * 10);
+      return "B" + Date.now().toString().slice(-6) + Math.floor(Math.random() * 10);
+    }
+
+    function normalizeText(value) {
+      return String(value || "").trim();
+    }
+
+    function getLotValue(item) {
+      return normalizeText(item.lot_number || item.lot || "");
+    }
+
+    function getSerialValue(item) {
+      return Number(item.serial || 0);
+    }
+
+    function getBarcodeValue(item) {
+      return normalizeText(item.barcode || "");
+    }
+
+    function isDuplicateBarcode(barcode, ignoreBarcode = "") {
+      return stockItems.some((item) => {
+        const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
+        if (!statusOk) return false;
+        const itemBarcode = getBarcodeValue(item);
+        return itemBarcode === normalizeText(barcode) && itemBarcode !== normalizeText(ignoreBarcode);
+      });
     }
 
     function generateBarcodeNow(showMessage = true, forceNew = false) {
       const barcodeField = document.getElementById("stickerBarcode");
       const previewField = document.getElementById("barcodePreview");
+
+      if (!barcodeField || !previewField) return "";
 
       const oldBarcode = barcodeField.value.trim();
 
@@ -396,7 +435,7 @@
       let barcode = generateUniqueBarcode();
       let tries = 0;
 
-      while (isDuplicateBarcode(barcode) && tries < 30) {
+      while (isDuplicateBarcode(barcode) && tries < 50) {
         barcode = generateUniqueBarcode();
         tries++;
       }
@@ -408,29 +447,24 @@
       return barcode;
     }
 
-    function generateFreshUniqueBarcode(excludeBarcode = "") {
-      let tries = 0;
-      let candidate = "";
-
-      do {
-        candidate = generateUniqueBarcode();
-        tries++;
-      } while (isDuplicateBarcode(candidate, excludeBarcode) && tries < 20);
-
-      return candidate;
-    }
-
     function loadProcessTypeOptions(selectedValue = "") {
       const select = document.getElementById("processTypeSelector");
       if (!select) return;
 
       select.innerHTML = "";
       processTypes.forEach((type) => {
-        select.innerHTML += `<option value="${type}">${type}</option>`;
+        const option = document.createElement("option");
+        option.value = type;
+        option.textContent = type;
+        select.appendChild(option);
       });
 
       if (selectedValue && processTypes.includes(selectedValue)) {
         select.value = selectedValue;
+      }
+
+      if (!selectedValue && processTypes.length) {
+        select.value = processTypes[0];
       }
     }
 
@@ -486,22 +520,6 @@
       };
     }
 
-    function normalizeText(value) {
-      return String(value || "").trim();
-    }
-
-    function getLotValue(item) {
-      return normalizeText(item.lot_number || item.lot || "");
-    }
-
-    function getSerialValue(item) {
-      return Number(item.serial || 0);
-    }
-
-    function getBarcodeValue(item) {
-      return normalizeText(item.barcode || "");
-    }
-
     function getVisibleItemsSorted() {
       return stockItems
         .filter((item) => {
@@ -510,7 +528,10 @@
           return statusOk && notHidden;
         })
         .sort((a, b) => {
-          const lotCompare = getLotValue(a).localeCompare(getLotValue(b), undefined, { numeric: true, sensitivity: "base" });
+          const lotCompare = getLotValue(a).localeCompare(getLotValue(b), undefined, {
+            numeric: true,
+            sensitivity: "base"
+          });
           if (lotCompare !== 0) return lotCompare;
           return getSerialValue(a) - getSerialValue(b);
         });
@@ -520,20 +541,10 @@
       return stockItems.some((item) => {
         const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
         if (!statusOk) return false;
+
         return (
           getLotValue(item) === normalizeText(lot) &&
           getSerialValue(item) === Number(serial) &&
-          getBarcodeValue(item) !== normalizeText(ignoreBarcode)
-        );
-      });
-    }
-
-    function isDuplicateBarcode(barcode, ignoreBarcode = "") {
-      return stockItems.some((item) => {
-        const statusOk = String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK";
-        if (!statusOk) return false;
-        return (
-          getBarcodeValue(item) === normalizeText(barcode) &&
           getBarcodeValue(item) !== normalizeText(ignoreBarcode)
         );
       });
@@ -552,8 +563,25 @@
       }
     }
 
-    function resetAddFormAfterSave(nextSerial = "") {
-      document.getElementById("stickerSerial").value = nextSerial ? String(nextSerial) : "";
+    function getNextSerialForLot(lot) {
+      const filtered = stockItems.filter((item) => {
+        return (
+          String(item.status || "IN_STOCK").toUpperCase() === "IN_STOCK" &&
+          getLotValue(item) === normalizeText(lot)
+        );
+      });
+
+      if (!filtered.length) return 1;
+
+      const maxSerial = Math.max(...filtered.map((item) => Number(item.serial || 0)));
+      return maxSerial + 1;
+    }
+
+    function resetAddFormAfterSave() {
+      const lot = document.getElementById("lotSelector")?.value.trim() || "";
+      const nextSerial = getNextSerialForLot(lot);
+
+      document.getElementById("stickerSerial").value = String(nextSerial);
       document.getElementById("stickerProductName").value = "";
       document.getElementById("stickerPurity").value = "";
       document.getElementById("stickerSku").value = "";
@@ -564,6 +592,9 @@
       document.getElementById("editStickerBarcode").value = "";
       document.getElementById("barcodePreview").value = "";
       document.getElementById("printExtraWeight").value = "";
+
+      generateBarcodeNow(false, true);
+      document.getElementById("stickerProductName")?.focus();
     }
 
     async function addStickerItem() {
@@ -587,9 +618,7 @@
       }
 
       if (isDuplicateBarcode(data.barcode)) {
-        const freshBarcode = generateBarcodeNow(false, true);
-        document.getElementById("stickerBarcode").value = freshBarcode;
-        document.getElementById("barcodePreview").value = freshBarcode;
+        generateBarcodeNow(false, true);
         data = getStickerFormData();
 
         if (isDuplicateBarcode(data.barcode)) {
@@ -609,8 +638,8 @@
 
         if (result.success) {
           await loadFromServer();
+          resetAddFormAfterSave();
           showToast("Saved & added to stock ✅", "success");
-          document.getElementById("stickerWeight")?.focus();
         } else {
           showToast(result.message || "Database save failed", "error");
         }
@@ -630,7 +659,7 @@
       renderStickerList();
     }
 
-    function getInlineEditedValues(row) {
+    function getInlineEditedValues(row, oldBarcode) {
       return {
         serial: row.querySelector('[data-field="serial"]')?.value.trim() || "",
         productName: row.querySelector('[data-field="product_name"]')?.value.trim() || "",
@@ -642,7 +671,7 @@
         lot: row.querySelector('[data-field="lot_number"]')?.value.trim() || "",
         metalType: row.querySelector('[data-field="metal_type"]')?.value.trim() || "",
         processType: row.querySelector('[data-field="process_type"]')?.value.trim() || "",
-        barcode: row.querySelector('[data-field="barcode"]')?.value.trim() || ""
+        barcode: oldBarcode
       };
     }
 
@@ -650,7 +679,7 @@
       const row = document.querySelector(`tr[data-editing-barcode="${oldBarcode}"]`);
       if (!row) return;
 
-      const data = getInlineEditedValues(row);
+      const data = getInlineEditedValues(row, oldBarcode);
 
       if (!data.serial || !data.productName || !data.purity || !data.sku || !data.size || !data.weight || !data.lot) {
         showToast("Serial, Product, Purity, SKU, Size, Weight aur Lot Number required hai", "error");
@@ -661,9 +690,6 @@
         showToast(`Lot ${data.lot} me serial ${data.serial} pehle se exist hai`, "error");
         return;
       }
-
-      const newBarcode = generateFreshUniqueBarcode(oldBarcode);
-      data.barcode = newBarcode;
 
       try {
         const res = await fetch(`${API_BASE}/updateSticker/${oldBarcode}`, {
@@ -677,7 +703,7 @@
         if (result.success) {
           editingBarcodeInline = null;
           await loadFromServer();
-          showToast(`Sticker updated. New barcode: ${newBarcode}`, "success");
+          showToast("Sticker updated successfully", "success");
         } else {
           showToast(result.message || "Update failed", "error");
         }
@@ -736,7 +762,6 @@
 
       renderStickerList();
       renderHistory();
-
       showToast("Sirf sticker list se delete hua, stock me safe hai", "success");
     }
 
@@ -812,7 +837,6 @@
                 <input type="hidden" data-field="lot_number" value="${item.lot_number || item.lot || ""}">
                 <input type="hidden" data-field="metal_type" value="${item.metal_type || item.metalType || "Silver"}">
                 <input type="hidden" data-field="process_type" value="${item.process_type || item.processType || ""}">
-                <input type="hidden" data-field="barcode" value="${itemBarcode}">
                 <div class="inline-row-actions">
                   <button type="button" class="inline-save-btn" onclick="saveInlineEdit('${itemBarcode}')">Save</button>
                   <button type="button" class="inline-cancel-btn" onclick="cancelInlineEdit()">Cancel</button>
@@ -1043,6 +1067,7 @@
     font-size: 8px;
     font-weight: 700;
     line-height: 1;
+    position: relative;
   }
 
   .top-main {
@@ -1170,15 +1195,7 @@
             e.preventDefault();
 
             if (id === "stickerWeight") {
-              const serialInput = document.getElementById("stickerSerial");
-              const currentSerial = Number(serialInput.value || 0);
-              serialInput.value = isNaN(currentSerial) ? "1" : String(currentSerial + 1);
-
-              document.getElementById("stickerWeight").value = "";
-
-              generateBarcodeNow(false, true);
-
-              document.getElementById("stickerWeight").focus();
+              addStickerItem();
               return;
             }
 
@@ -1192,11 +1209,22 @@
 
     window.addEventListener("load", function () {
       loadProcessTypeOptions();
-      loadFromServer();
       syncLotPreview();
-      resetAddFormAfterSave("");
+      loadFromServer().then(() => {
+        const lot = document.getElementById("lotSelector")?.value.trim() || "";
+        if (lot) {
+          document.getElementById("stickerSerial").value = String(getNextSerialForLot(lot));
+        }
+      });
+
       generateBarcodeNow(false, true);
       moveNextOnEnter();
+
+      document.getElementById("lotSelector")?.addEventListener("input", function () {
+        const lot = this.value.trim();
+        document.getElementById("stickerSerial").value = String(getNextSerialForLot(lot));
+        syncLotPreview();
+      });
     });
   </script>
 </body>
