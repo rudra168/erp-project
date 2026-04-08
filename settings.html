@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP Settings</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    .settings-page {
+      padding: 20px;
+    }
+
+    .settings-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      margin-bottom: 18px;
+    }
+
+    .settings-card h3 {
+      margin-bottom: 14px;
+      font-size: 18px;
+      color: #7c5a1d;
+    }
+
+    .settings-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .input-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-box label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .input-box input,
+    .input-box textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      outline: none;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .input-box textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      background: linear-gradient(180deg, #d9ae67, #bb8134);
+      color: #fff;
+    }
+
+    .secondary-btn {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .danger-btn {
+      background: #7c2d12;
+      color: #fff;
+    }
+
+    .info-box {
+      background: #fff8eb;
+      border: 1px solid #ecd5a5;
+      color: #7c5a1d;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .locked-chip {
+      display: inline-block;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: #fee2e2;
+      color: #991b1b;
+      margin-bottom: 12px;
+    }
+
+    .unlocked-chip {
+      display: inline-block;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: #dcfce7;
+      color: #166534;
+      margin-bottom: 12px;
+    }
+
+    .preview-box {
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 14px;
+      background: #f8fafc;
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
+
+        <div class="settings-shortcut">
+          <a href="settings.html" title="Settings">
+            <i class="fas fa-gear"></i>
+          </a>
+        </div>
+
+        <ul class="menu">
+          <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+          <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+          <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+          <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+          <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+          <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+          <li><a href="settings.html" class="active"><i class="fas fa-gear"></i> Settings</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" type="button" onclick="toggleSidebar()">
+            <span></span><span></span><span></span>
+          </button>
+
+          <div class="title">
+            <h1>ERP Settings</h1>
+            <p>Billing print aur QR customization</p>
+          </div>
+        </div>
+      </div>
+
+      <section class="settings-page">
+        <div class="settings-card">
+          <div id="settingsLockStatus" class="locked-chip">Locked</div>
+
+          <h3>Verification</h3>
+
+          <div class="settings-form-grid">
+            <div class="input-box">
+              <label>Registered Email</label>
+              <input type="email" id="ownerEmail" placeholder="owner@email.com" />
+            </div>
+
+            <div class="input-box">
+              <label>Step Code</label>
+              <input type="password" id="settingsStepCode" placeholder="Enter verification code" />
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="primary-btn" type="button" onclick="unlockSettings()">Unlock Settings</button>
+            <button class="secondary-btn" type="button" onclick="lockSettings()">Lock</button>
+          </div>
+
+          <div class="info-box">
+            Settings save karne se pehle unlock karna zaroori hai.  
+            Abhi ye beginner version me <strong>step code verification</strong> se chalega.
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>Billing Print Settings</h3>
+
+          <div class="settings-form-grid">
+            <div class="input-box">
+              <label>Top Title</label>
+              <input type="text" id="top_title" placeholder="Top title" />
+            </div>
+
+            <div class="input-box">
+              <label>Company Name</label>
+              <input type="text" id="company_name" placeholder="Company name" />
+            </div>
+
+            <div class="input-box">
+              <label>GSTIN</label>
+              <input type="text" id="gstin" placeholder="GSTIN" />
+            </div>
+
+            <div class="input-box">
+              <label>Account Number</label>
+              <input type="text" id="account_no" placeholder="Account number" />
+            </div>
+
+            <div class="input-box">
+              <label>IFSC</label>
+              <input type="text" id="ifsc" placeholder="IFSC code" />
+            </div>
+
+            <div class="input-box">
+              <label>UPI ID</label>
+              <input type="text" id="upi_id" placeholder="example@okaxis" />
+            </div>
+
+            <div class="input-box">
+              <label>UPI Name</label>
+              <input type="text" id="upi_name" placeholder="UPI display name" />
+            </div>
+          </div>
+
+          <div class="input-box" style="margin-top:14px;">
+            <label>Address</label>
+            <textarea id="address" placeholder="Business address"></textarea>
+          </div>
+
+          <div class="input-box" style="margin-top:14px;">
+            <label>Declaration</label>
+            <textarea id="declaration" placeholder="Declaration text"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button class="primary-btn" type="button" onclick="saveSettings()">Save Settings</button>
+            <button class="secondary-btn" type="button" onclick="loadSettingsToForm()">Reload</button>
+            <button class="danger-btn" type="button" onclick="resetSettings()">Reset Default</button>
+          </div>
+
+          <div class="preview-box" id="settingsPreviewBox">
+            Preview yahan dikhega...
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const ERP_SETTINGS_KEY = "erpBillingSettings";
+    const ERP_UNLOCK_KEY = "erpSettingsUnlocked";
+
+    // Beginner version ka fixed step code
+    // Baad me isko backend OTP/email se replace karenge
+    const OWNER_STEP_CODE = "RPJ2026";
+
+    const defaultSettings = {
+      ownerEmail: "owner@example.com",
+      top_title: "TAX INVOICE",
+      company_name: "RAJPATI ENTERPRISE",
+      gstin: "21DAWPG9914G1ZF",
+      account_no: "25050400005430",
+      ifsc: "BARB0CUTMAN",
+      address: "baulakud 42mauza cuttack-754112, Odisha",
+      declaration: "Declaration : Subject to JHINKIRIA ,42 MOUJA,CUTTACK-112 Jurisdiction only.",
+      upi_id: "yourupi@okaxis",
+      upi_name: "RAJPATI ENTERPRISE"
+    };
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) sidebar.classList.toggle("collapsed");
+    }
+
+    function getSavedSettings() {
+      const saved = JSON.parse(localStorage.getItem(ERP_SETTINGS_KEY));
+      return saved ? { ...defaultSettings, ...saved } : { ...defaultSettings };
+    }
+
+    function updateLockUI() {
+      const unlocked = sessionStorage.getItem(ERP_UNLOCK_KEY) === "true";
+      const status = document.getElementById("settingsLockStatus");
+
+      if (unlocked) {
+        status.textContent = "Unlocked";
+        status.className = "unlocked-chip";
+      } else {
+        status.textContent = "Locked";
+        status.className = "locked-chip";
+      }
+
+      const fieldIds = [
+        "ownerEmail",
+        "top_title",
+        "company_name",
+        "gstin",
+        "account_no",
+        "ifsc",
+        "address",
+        "declaration",
+        "upi_id",
+        "upi_name"
+      ];
+
+      fieldIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === "ownerEmail") {
+          el.disabled = false;
+        } else {
+          el.disabled = !unlocked;
+        }
+      });
+
+      document.getElementById("settingsStepCode").disabled = false;
+    }
+
+    function unlockSettings() {
+      const enteredCode = document.getElementById("settingsStepCode").value.trim();
+
+      if (!enteredCode) {
+        alert("Step code daalo");
+        return;
+      }
+
+      if (enteredCode !== OWNER_STEP_CODE) {
+        alert("Step code galat hai");
+        return;
+      }
+
+      sessionStorage.setItem(ERP_UNLOCK_KEY, "true");
+      updateLockUI();
+      alert("Settings unlocked ho gaya");
+    }
+
+    function lockSettings() {
+      sessionStorage.removeItem(ERP_UNLOCK_KEY);
+      updateLockUI();
+      document.getElementById("settingsStepCode").value = "";
+      alert("Settings lock ho gaya");
+    }
+
+    function loadSettingsToForm() {
+      const settings = getSavedSettings();
+
+      document.getElementById("ownerEmail").value = settings.ownerEmail || "";
+      document.getElementById("top_title").value = settings.top_title || "";
+      document.getElementById("company_name").value = settings.company_name || "";
+      document.getElementById("gstin").value = settings.gstin || "";
+      document.getElementById("account_no").value = settings.account_no || "";
+      document.getElementById("ifsc").value = settings.ifsc || "";
+      document.getElementById("address").value = settings.address || "";
+      document.getElementById("declaration").value = settings.declaration || "";
+      document.getElementById("upi_id").value = settings.upi_id || "";
+      document.getElementById("upi_name").value = settings.upi_name || "";
+
+      renderPreview();
+    }
+
+    function getFormSettings() {
+      return {
+        ownerEmail: document.getElementById("ownerEmail").value.trim(),
+        top_title: document.getElementById("top_title").value.trim(),
+        company_name: document.getElementById("company_name").value.trim(),
+        gstin: document.getElementById("gstin").value.trim(),
+        account_no: document.getElementById("account_no").value.trim(),
+        ifsc: document.getElementById("ifsc").value.trim(),
+        address: document.getElementById("address").value.trim(),
+        declaration: document.getElementById("declaration").value.trim(),
+        upi_id: document.getElementById("upi_id").value.trim(),
+        upi_name: document.getElementById("upi_name").value.trim()
+      };
+    }
+
+    function saveSettings() {
+      const unlocked = sessionStorage.getItem(ERP_UNLOCK_KEY) === "true";
+
+      if (!unlocked) {
+        alert("Pehle settings unlock karo");
+        return;
+      }
+
+      const settings = getFormSettings();
+
+      if (!settings.company_name || !settings.top_title || !settings.upi_id) {
+        alert("Company name, top title aur UPI ID required hai");
+        return;
+      }
+
+      localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(settings));
+      renderPreview();
+      alert("Settings save ho gaya");
+
+      // save ke baad auto lock
+      lockSettings();
+    }
+
+    function resetSettings() {
+      const unlocked = sessionStorage.getItem(ERP_UNLOCK_KEY) === "true";
+
+      if (!unlocked) {
+        alert("Pehle unlock karo");
+        return;
+      }
+
+      localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+      loadSettingsToForm();
+      alert("Default settings restore ho gaya");
+    }
+
+    function renderPreview() {
+      const s = getFormSettings();
+      const preview = document.getElementById("settingsPreviewBox");
+
+      preview.innerHTML = `
+        <strong>${s.top_title || "-"}</strong><br>
+        <strong>${s.company_name || "-"}</strong><br>
+        GSTIN: ${s.gstin || "-"}<br>
+        A/C No: ${s.account_no || "-"}<br>
+        IFSC: ${s.ifsc || "-"}<br>
+        Address: ${s.address || "-"}<br>
+        UPI: ${s.upi_id || "-"} (${s.upi_name || "-"})<br>
+        Declaration: ${s.declaration || "-"}
+      `;
+    }
+
+    [
+      "ownerEmail",
+      "top_title",
+      "company_name",
+      "gstin",
+      "account_no",
+      "ifsc",
+      "address",
+      "declaration",
+      "upi_id",
+      "upi_name"
+    ].forEach((id) => {
+      window.addEventListener("load", () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener("input", renderPreview);
+        }
+      });
+    });
+
+    window.addEventListener("load", function () {
+      if (!localStorage.getItem(ERP_SETTINGS_KEY)) {
+        localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+      }
+
+      loadSettingsToForm();
+      updateLockUI();
+    });
+  </script>
+</body>
+</html>

@@ -10,6 +10,26 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
+    .settings-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      transition: 0.25s ease;
+      font-size: 15px;
+    }
+
+    .settings-btn:hover {
+      background: #e2e8f0;
+      transform: rotate(20deg) scale(1.05);
+    }
+
     .payment-extra-box {
       margin-top: 14px;
       padding: 14px;
@@ -173,7 +193,10 @@
           </div>
         </div>
 
-        <div class="top-right">
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <a href="settings.html" class="settings-btn" title="Settings">
+            <i class="fas fa-gear"></i>
+          </a>
           <button type="button" onclick="printBillingInvoice()">Print</button>
           <div class="profile-box"></div>
         </div>
@@ -410,16 +433,6 @@
 
               <div class="form-grid">
                 <div class="input-box">
-                  <label>UPI ID</label>
-                  <input type="text" id="billUpiId" placeholder="example@okaxis" oninput="generatePaymentQr()" />
-                </div>
-
-                <div class="input-box">
-                  <label>UPI Name</label>
-                  <input type="text" id="billUpiName" placeholder="Rajpati Enterprise" oninput="generatePaymentQr()" />
-                </div>
-
-                <div class="input-box">
                   <label>Transaction Note</label>
                   <input type="text" id="billUpiNote" placeholder="Invoice Payment" oninput="generatePaymentQr()" />
                 </div>
@@ -437,7 +450,7 @@
                   </div>
 
                   <div class="info-note">
-                    Online select karne par QR auto generate hoga. Payment Paid hote hi auto save + auto print chalega.
+                    Online select karne par QR auto generate hoga. Permanent UPI settings page se aayega.
                   </div>
                 </div>
               </div>
@@ -507,6 +520,7 @@
               <button type="button" class="secondary-btn" onclick="downloadBillingInvoice()">Download</button>
             </div>
           </div>
+
         </div>
       </section>
     </main>
@@ -518,6 +532,24 @@
     let qrInstance = null;
     let autoProcessing = false;
 
+    function getErpSettings() {
+      const defaultSettings = {
+        ownerEmail: "owner@example.com",
+        top_title: "TAX INVOICE",
+        company_name: "RAJPATI ENTERPRISE",
+        gstin: "21DAWPG9914G1ZF",
+        account_no: "25050400005430",
+        ifsc: "BARB0CUTMAN",
+        address: "baulakud 42mauza cuttack-754112, Odisha",
+        declaration: "Declaration : Subject to JHINKIRIA ,42 MOUJA,CUTTACK-112 Jurisdiction only.",
+        upi_id: "yourupi@okaxis",
+        upi_name: "RAJPATI ENTERPRISE"
+      };
+
+      const saved = JSON.parse(localStorage.getItem("erpBillingSettings"));
+      return saved ? { ...defaultSettings, ...saved } : defaultSettings;
+    }
+
     function num(value) {
       const n = Number(value || 0);
       return isNaN(n) ? 0 : n;
@@ -525,16 +557,12 @@
 
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
-      if (sidebar) {
-        sidebar.classList.toggle("collapsed");
-      }
+      if (sidebar) sidebar.classList.toggle("collapsed");
     }
 
     function toggleManualEntry() {
       const box = document.getElementById("manualEntryBox");
-      if (box) {
-        box.classList.toggle("hidden-box");
-      }
+      if (box) box.classList.toggle("hidden-box");
     }
 
     function saveBillingItems() {
@@ -616,9 +644,7 @@
       const processedItems = JSON.parse(localStorage.getItem("processedInvoiceItems")) || [];
 
       if (!Array.isArray(processedItems) || !processedItems.length) {
-        if (showMessage) {
-          alert("Invoice se koi item nahi mila");
-        }
+        if (showMessage) alert("Invoice se koi item nahi mila");
         return;
       }
 
@@ -663,9 +689,7 @@
       calculateBillingTotal();
       saveBillingItems();
 
-      if (showMessage) {
-        alert("Invoice se items billing me load ho gaye");
-      }
+      if (showMessage) alert("Invoice se items billing me load ho gaye");
     }
 
     function clearBillingAll() {
@@ -695,8 +719,6 @@
         "billSgst",
         "billIgst",
         "billGrandTotal",
-        "billUpiId",
-        "billUpiName",
         "billUpiNote",
         "billDueNote",
         "billReminderMode",
@@ -708,21 +730,18 @@
 
       ids.forEach((id) => {
         const el = document.getElementById(id);
-        if (el) {
-          if (id === "billRoundOff") {
-            el.value = "0";
-          } else if (id === "billReminderMode") {
-            el.value = "Manual";
-          } else {
-            el.value = "";
-          }
+        if (!el) return;
+        if (id === "billRoundOff") {
+          el.value = "0";
+        } else if (id === "billReminderMode") {
+          el.value = "Manual";
+        } else {
+          el.value = "";
         }
       });
 
       const dateInput = document.getElementById("billDate");
-      if (dateInput) {
-        dateInput.value = getTodayDate();
-      }
+      if (dateInput) dateInput.value = getTodayDate();
 
       clearQrBox();
       updateQuickSummary();
@@ -961,17 +980,12 @@
       const percent = num(document.getElementById("billMetalPercent").value);
 
       const payableMetal = totalWeight * (percent / 100);
-
       const totalWeightText = totalWeight.toFixed(3);
       const payableText = payableMetal.toFixed(3) + " g";
 
-      const totalWeightEl = document.getElementById("billMetalTotalWeight");
-      const payableEl = document.getElementById("billMetalPayable");
-      const previewEl = document.getElementById("metalPreviewText");
-
-      if (totalWeightEl) totalWeightEl.value = totalWeightText + " g";
-      if (payableEl) payableEl.value = payableText;
-      if (previewEl) previewEl.textContent = payableText;
+      document.getElementById("billMetalTotalWeight").value = totalWeightText + " g";
+      document.getElementById("billMetalPayable").value = payableText;
+      document.getElementById("metalPreviewText").textContent = payableText;
 
       updateQuickSummary();
       maybeAutoFinalize();
@@ -984,18 +998,36 @@
     }
 
     function generatePaymentQr() {
-      const mode = document.getElementById("billPaymentMode").value;
+      const mode = document.getElementById("billPaymentMode")?.value || "";
       const qrBox = document.getElementById("billQrCode");
-      const upiId = document.getElementById("billUpiId").value.trim();
-      const upiName = document.getElementById("billUpiName").value.trim() || "RAJPATI ENTERPRISE";
-      const note = document.getElementById("billUpiNote").value.trim() || "Invoice Payment";
-      const invoiceNo = document.getElementById("billInvoiceNumber").value.trim() || "BILL";
-      const grandTotal = num(document.getElementById("billGrandTotal").value);
-      const paidAmount = num(document.getElementById("billPaidAmount").value || grandTotal);
+      const erpSettings = getErpSettings();
 
-      document.getElementById("onlineGrandTotalText").textContent = grandTotal.toFixed(2);
-      document.getElementById("onlinePayNowText").textContent = paidAmount.toFixed(2);
-      document.getElementById("duePreviewText").textContent = num(document.getElementById("billDueAmount").value).toFixed(2);
+      const upiId = String(erpSettings.upi_id || "").trim();
+      const upiName = String(erpSettings.upi_name || "RAJPATI ENTERPRISE").trim();
+
+      const noteInput = document.getElementById("billUpiNote");
+      const note = String(noteInput?.value || "Invoice Payment").trim();
+
+      const invoiceNo = String(document.getElementById("billInvoiceNumber")?.value || "BILL").trim();
+      const grandTotal = Number(document.getElementById("billGrandTotal")?.value || 0);
+      const paidAmount = Number(document.getElementById("billPaidAmount")?.value || grandTotal || 0);
+      const dueAmount = Number(document.getElementById("billDueAmount")?.value || 0);
+
+      const onlineGrandTotalText = document.getElementById("onlineGrandTotalText");
+      const onlinePayNowText = document.getElementById("onlinePayNowText");
+      const duePreviewText = document.getElementById("duePreviewText");
+
+      if (onlineGrandTotalText) {
+        onlineGrandTotalText.textContent = isNaN(grandTotal) ? "0.00" : grandTotal.toFixed(2);
+      }
+
+      if (onlinePayNowText) {
+        onlinePayNowText.textContent = isNaN(paidAmount) ? "0.00" : paidAmount.toFixed(2);
+      }
+
+      if (duePreviewText) {
+        duePreviewText.textContent = isNaN(dueAmount) ? "0.00" : dueAmount.toFixed(2);
+      }
 
       if (mode !== "Online") {
         clearQrBox();
@@ -1006,19 +1038,36 @@
 
       qrBox.innerHTML = "";
 
-      if (!upiId || paidAmount <= 0) {
-        qrBox.innerHTML = `<div style="text-align:center; font-size:13px; color:#64748b;">UPI ID aur payable amount do</div>`;
+      if (!upiId) {
+        qrBox.innerHTML = `<div style="text-align:center; font-size:13px; color:#64748b; line-height:1.6;">Settings me permanent UPI ID save karo</div>`;
+        return;
+      }
+
+      const payableNow = !isNaN(paidAmount) && paidAmount > 0 ? paidAmount : grandTotal;
+
+      if (!payableNow || payableNow <= 0) {
+        qrBox.innerHTML = `<div style="text-align:center; font-size:13px; color:#64748b; line-height:1.6;">QR generate karne ke liye amount chahiye</div>`;
         return;
       }
 
       const txnNote = `${note} ${invoiceNo}`.trim();
-      const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${paidAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(txnNote)}`;
+      const upiUrl =
+        `upi://pay?pa=${encodeURIComponent(upiId)}` +
+        `&pn=${encodeURIComponent(upiName)}` +
+        `&am=${Number(payableNow).toFixed(2)}` +
+        `&cu=INR` +
+        `&tn=${encodeURIComponent(txnNote)}`;
 
-      qrInstance = new QRCode(qrBox, {
-        text: upiUrl,
-        width: 200,
-        height: 200
-      });
+      try {
+        qrInstance = new QRCode(qrBox, {
+          text: upiUrl,
+          width: 200,
+          height: 200
+        });
+      } catch (error) {
+        console.error("QR generation error:", error);
+        qrBox.innerHTML = `<div style="text-align:center; font-size:13px; color:#991b1b; line-height:1.6;">QR generate nahi ho paya</div>`;
+      }
     }
 
     function getAutoFinalizeKey() {
@@ -1060,8 +1109,6 @@
     }
 
     function getBillingRecord() {
-      calculateBillingTotal();
-
       const customerName = document.getElementById("billCustomerName").value.trim() || "";
       const mobile = document.getElementById("billMobile").value.trim() || "";
       const gstNo = document.getElementById("billGst").value.trim() || "";
@@ -1083,17 +1130,15 @@
       const grandTotal = num(document.getElementById("billGrandTotal").value);
       const totalWeight = billingItems.reduce((sum, item) => sum + num(item.weight), 0);
 
-      const upiId = document.getElementById("billUpiId").value.trim() || "";
-      const upiName = document.getElementById("billUpiName").value.trim() || "";
-      const upiNote = document.getElementById("billUpiNote").value.trim() || "";
       const dueNote = document.getElementById("billDueNote").value.trim() || "";
       const reminderMode = document.getElementById("billReminderMode").value || "";
       const metalPercent = num(document.getElementById("billMetalPercent").value);
       const metalPayable = num((document.getElementById("billMetalPayable").value || "").replace(/[^\d.]/g, ""));
       const metalNote = document.getElementById("billMetalNote").value.trim() || "";
+      const erpSettings = getErpSettings();
 
       return {
-        id: invoiceNumber || ("BILL-" + Date.now()),
+        id: invoiceNumber,
         invoiceNumber,
         customerName,
         mobile,
@@ -1116,14 +1161,12 @@
         totalCount: billingItems.length,
         totalWeight,
         items: billingItems.map((item) => ({ ...item })),
-        upiId,
-        upiName,
-        upiNote,
         dueNote,
         reminderMode,
         metalPercent,
         metalPayable,
         metalNote,
+        companySettings: erpSettings,
         savedAt: new Date().toLocaleString(),
         source: "billing"
       };
@@ -1150,17 +1193,13 @@
       }
 
       const record = getBillingRecord();
-
       saveRecordToHistoryArray("billingHistory", record);
       saveRecordToHistoryArray("salesHistory", {
         ...record,
         historyType: "billing_saved"
       });
 
-      if (showAlert) {
-        alert("Billing record save ho gaya");
-      }
-
+      if (showAlert) alert("Billing record save ho gaya");
       return record;
     }
 
@@ -1168,9 +1207,15 @@
       const record = getBillingRecord();
       if (!record) return "";
 
-      const businessName = "RAJPATI ENTERPRISE";
-      const businessAddress = "baulakud 42mauza cuttack-754112, Odisha";
-      const businessGstin = "21DAWPG9914G1ZF";
+      const erpSettings = record.companySettings || getErpSettings();
+
+      const businessTopTitle = erpSettings.top_title || "TAX INVOICE";
+      const businessName = erpSettings.company_name || "RAJPATI ENTERPRISE";
+      const businessAddress = erpSettings.address || "";
+      const businessGstin = erpSettings.gstin || "";
+      const businessAccountNo = erpSettings.account_no || "";
+      const businessIfsc = erpSettings.ifsc || "";
+      const businessDeclaration = erpSettings.declaration || "";
 
       const customerName = record.customerName || "";
       const mobile = record.mobile || "";
@@ -1228,9 +1273,7 @@
                 <tr><td><strong>IGST @ 3%</strong></td><td>₹ ${igst}</td></tr>
               `
           )
-        : `
-          <tr><td><strong>GST</strong></td><td>₹ 0.00</td></tr>
-        `;
+        : `<tr><td><strong>GST</strong></td><td>₹ 0.00</td></tr>`;
 
       const extraPaymentInfo = paymentMode === "Metal"
         ? `
@@ -1276,18 +1319,18 @@
 
     <div class="topline">
       <div><strong>GSTIN :</strong> ${businessGstin}</div>
-      <div><strong>TAX INVOICE</strong></div>
+      <div><strong>${businessTopTitle}</strong></div>
       <div><strong>Sln/Ivn :</strong> ${invoiceNumber}</div>
     </div>
 
     <div class="header-box">
-      <div><strong>A/c No:</strong> 25050400005430</div>
+      <div><strong>A/c No:</strong> ${businessAccountNo}</div>
       <div class="header-center">
-        RAJPATI ENTERPRISE<br>
-        JHINKIRIA ,42 MOUJA,CUTTACK-112<br>
+        ${businessName}<br>
+        ${businessAddress}<br>
         <span class="deal-box">Deals In: All types of Gold & silver Sankha Trading.</span>
       </div>
-      <div><strong>IFSC CODE :</strong> BARB0CUTMAN</div>
+      <div><strong>IFSC CODE :</strong> ${businessIfsc}</div>
     </div>
 
     <div class="party-box">
@@ -1347,17 +1390,14 @@
     </div>
 
     <div class="bottom-box">
-      <div class="declaration">
-        Declaration : Subject to JHINKIRIA ,42 MOUJA,CUTTACK-112 Jurisdiction only.
-      </div>
+      <div class="declaration">${businessDeclaration}</div>
       <div class="sign-box">
-        for RAJPATI<br>ENTERPRISE
+        for ${businessName}
       </div>
     </div>
   </div>
 </body>
-</html>
-      `;
+</html>`;
     }
 
     function printBillingInvoice(saveBeforePrint = true) {
@@ -1366,9 +1406,7 @@
         return;
       }
 
-      if (saveBeforePrint) {
-        saveBillingRecord(false);
-      }
+      if (saveBeforePrint) saveBillingRecord(false);
 
       const html = buildBillingPrintHtml();
       if (!html) return;
@@ -1445,9 +1483,11 @@
         loadItemsFromInvoice(false);
       }
 
-      document.getElementById("billUpiName").value = "RAJPATI ENTERPRISE";
-      document.getElementById("billUpiNote").value = "Invoice Payment";
-      document.getElementById("billReminderMode").value = "Manual";
+      const upiNote = document.getElementById("billUpiNote");
+      if (upiNote) upiNote.value = "Invoice Payment";
+
+      const reminder = document.getElementById("billReminderMode");
+      if (reminder) reminder.value = "Manual";
 
       handlePaymentModeChange();
       updateQuickSummary();
