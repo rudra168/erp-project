@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +7,83 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    .payment-extra-box {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fffdf8;
+    }
+
+    .payment-extra-box h4 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      color: #7c5a1d;
+    }
+
+    .payment-section-hidden {
+      display: none;
+    }
+
+    .qr-wrap {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      margin-top: 10px;
+    }
+
+    .qr-box {
+      min-width: 220px;
+      min-height: 220px;
+      padding: 12px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #billQrCode {
+      width: 200px;
+      height: 200px;
+    }
+
+    .info-note {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .summary-chip-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .summary-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .danger-soft {
+      color: #9a3412;
+    }
+
+    .success-soft {
+      color: #047857;
+    }
+  </style>
 </head>
 <body>
   <div class="layout">
@@ -56,7 +132,7 @@
       <section class="page active">
         <div class="section-box">
           <h2>Billing</h2>
-          <p>Invoice se item auto billing me aayega. Yahan rate aur MC daalke final bill print karo.</p>
+          <p>Invoice se item auto billing me aayega. Yahan rate, MC, payment mode, QR, due aur metal settlement sab manage hoga.</p>
 
           <div class="sub-card">
             <h3>Customer Details</h3>
@@ -95,33 +171,129 @@
             <div class="form-grid">
               <div class="input-box">
                 <label>Payment Mode</label>
-                <select id="billPaymentMode">
+                <select id="billPaymentMode" onchange="handlePaymentModeChange()">
                   <option value="">Select</option>
                   <option value="Cash">Cash</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Card">Card</option>
-                  <option value="Bank">Bank</option>
+                  <option value="Online">Online</option>
+                  <option value="Due">Due</option>
+                  <option value="Metal">Metal</option>
                 </select>
               </div>
 
               <div class="input-box">
                 <label>Payment Status</label>
-                <select id="billPaymentStatus">
+                <select id="billPaymentStatus" onchange="handlePaymentStatusChange()">
                   <option value="">Select</option>
                   <option value="Paid">Paid</option>
                   <option value="Partial">Partial</option>
                   <option value="Due">Due</option>
+                  <option value="Metal Settled">Metal Settled</option>
                 </select>
               </div>
 
               <div class="input-box">
                 <label>Paid Amount</label>
-                <input type="number" id="billPaidAmount" placeholder="Enter paid amount" />
+                <input type="number" id="billPaidAmount" placeholder="Enter paid amount" oninput="syncAmountsFromInputs()" />
               </div>
 
               <div class="input-box">
                 <label>Due Amount</label>
-                <input type="number" id="billDueAmount" placeholder="Enter due amount" />
+                <input type="number" id="billDueAmount" placeholder="Enter due amount" oninput="syncAmountsFromInputs()" />
+              </div>
+            </div>
+
+            <div id="onlinePaymentBox" class="payment-extra-box payment-section-hidden">
+              <h4>Online Payment / QR</h4>
+
+              <div class="form-grid">
+                <div class="input-box">
+                  <label>UPI ID</label>
+                  <input type="text" id="billUpiId" placeholder="example@okaxis" oninput="generatePaymentQr()" />
+                </div>
+
+                <div class="input-box">
+                  <label>UPI Name</label>
+                  <input type="text" id="billUpiName" placeholder="Rajpati Enterprise" oninput="generatePaymentQr()" />
+                </div>
+
+                <div class="input-box">
+                  <label>Transaction Note</label>
+                  <input type="text" id="billUpiNote" placeholder="Invoice Payment" oninput="generatePaymentQr()" />
+                </div>
+              </div>
+
+              <div class="qr-wrap">
+                <div class="qr-box">
+                  <div id="billQrCode"></div>
+                </div>
+
+                <div style="min-width:260px; flex:1;">
+                  <div class="summary-chip-row">
+                    <div class="summary-chip">Grand Total: ₹ <span id="onlineGrandTotalText">0.00</span></div>
+                    <div class="summary-chip">Payable Now: ₹ <span id="onlinePayNowText">0.00</span></div>
+                  </div>
+
+                  <div class="info-note">
+                    Online select karne par QR auto generate hoga. Customer scan karke payment kar sakta hai.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="duePaymentBox" class="payment-extra-box payment-section-hidden">
+              <h4>Due Payment</h4>
+
+              <div class="form-grid">
+                <div class="input-box">
+                  <label>Due Note</label>
+                  <input type="text" id="billDueNote" placeholder="Example: Bhai jab convenient ho tab settle kar dena" />
+                </div>
+
+                <div class="input-box">
+                  <label>Reminder Preference</label>
+                  <select id="billReminderMode">
+                    <option value="Manual">Manual Reminder</option>
+                    <option value="No Reminder">No Reminder</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="summary-chip-row">
+                <div class="summary-chip danger-soft">Pending Due: ₹ <span id="duePreviewText">0.00</span></div>
+              </div>
+
+              <div class="info-note">
+                Sensitive customer ke liye polite manual reminder hi better rahega.
+              </div>
+            </div>
+
+            <div id="metalPaymentBox" class="payment-extra-box payment-section-hidden">
+              <h4>Metal Settlement</h4>
+
+              <div class="form-grid">
+                <div class="input-box">
+                  <label>Total Weight</label>
+                  <input type="text" id="billMetalTotalWeight" readonly />
+                </div>
+
+                <div class="input-box">
+                  <label>Metal %</label>
+                  <input type="number" id="billMetalPercent" placeholder="Enter metal %" oninput="calculateMetalSettlement()" />
+                </div>
+
+                <div class="input-box">
+                  <label>Payable Metal</label>
+                  <input type="text" id="billMetalPayable" readonly />
+                </div>
+
+                <div class="input-box">
+                  <label>Metal Note</label>
+                  <input type="text" id="billMetalNote" placeholder="Example: 100g x 90% = 90g settlement" />
+                </div>
+              </div>
+
+              <div class="summary-chip-row">
+                <div class="summary-chip success-soft">Metal Settlement: <span id="metalPreviewText">0.000 g</span></div>
               </div>
             </div>
           </div>
@@ -282,6 +454,7 @@
   <script>
     let billingItems = [];
     let removedBillingBarcodes = JSON.parse(localStorage.getItem("removedBillingBarcodes")) || [];
+    let qrInstance = null;
 
     function num(value) {
       const n = Number(value || 0);
@@ -354,7 +527,6 @@
 
     function deleteBillingItem(index) {
       const item = billingItems[index];
-
       if (!item) return;
 
       if (item.barcode) {
@@ -430,7 +602,6 @@
     function clearBillingAll() {
       billingItems = [];
       removedBillingBarcodes = [];
-
       renderBillingTable();
       calculateBillingTotal();
 
@@ -454,7 +625,16 @@
         "billCgst",
         "billSgst",
         "billIgst",
-        "billGrandTotal"
+        "billGrandTotal",
+        "billUpiId",
+        "billUpiName",
+        "billUpiNote",
+        "billDueNote",
+        "billReminderMode",
+        "billMetalPercent",
+        "billMetalPayable",
+        "billMetalTotalWeight",
+        "billMetalNote"
       ];
 
       ids.forEach((id) => {
@@ -462,6 +642,8 @@
         if (el) {
           if (id === "billRoundOff") {
             el.value = "0";
+          } else if (id === "billReminderMode") {
+            el.value = "Manual";
           } else {
             el.value = "";
           }
@@ -472,6 +654,9 @@
       if (dateInput) {
         dateInput.value = getTodayDate();
       }
+
+      clearQrBox();
+      handlePaymentModeChange();
     }
 
     function renderBillingTable() {
@@ -563,6 +748,159 @@
 
       renderBillingTable();
       saveBillingItems();
+
+      autoSetAmounts();
+      calculateMetalSettlement();
+      generatePaymentQr();
+    }
+
+    function autoSetAmounts() {
+      const mode = document.getElementById("billPaymentMode").value;
+      const statusEl = document.getElementById("billPaymentStatus");
+      const paidEl = document.getElementById("billPaidAmount");
+      const dueEl = document.getElementById("billDueAmount");
+      const grandTotal = num(document.getElementById("billGrandTotal").value);
+
+      if (mode === "Cash" || mode === "Online") {
+        if (!statusEl.value || statusEl.value === "Due" || statusEl.value === "Metal Settled") {
+          statusEl.value = "Paid";
+        }
+
+        if (statusEl.value === "Paid") {
+          paidEl.value = grandTotal.toFixed(2);
+          dueEl.value = "0.00";
+        } else if (statusEl.value === "Partial") {
+          const paid = num(paidEl.value);
+          dueEl.value = Math.max(grandTotal - paid, 0).toFixed(2);
+        }
+      } else if (mode === "Due") {
+        statusEl.value = "Due";
+        paidEl.value = "0.00";
+        dueEl.value = grandTotal.toFixed(2);
+      } else if (mode === "Metal") {
+        statusEl.value = "Metal Settled";
+        paidEl.value = "0.00";
+        dueEl.value = "0.00";
+      }
+    }
+
+    function syncAmountsFromInputs() {
+      const grandTotal = num(document.getElementById("billGrandTotal").value);
+      const paidEl = document.getElementById("billPaidAmount");
+      const dueEl = document.getElementById("billDueAmount");
+      const statusEl = document.getElementById("billPaymentStatus");
+      const mode = document.getElementById("billPaymentMode").value;
+
+      const paid = num(paidEl.value);
+      const due = num(dueEl.value);
+
+      if (mode === "Cash" || mode === "Online") {
+        if (paid >= grandTotal && grandTotal > 0) {
+          statusEl.value = "Paid";
+          dueEl.value = "0.00";
+        } else if (paid > 0 && paid < grandTotal) {
+          statusEl.value = "Partial";
+          dueEl.value = Math.max(grandTotal - paid, 0).toFixed(2);
+        } else if (paid === 0 && grandTotal > 0) {
+          statusEl.value = "Due";
+          dueEl.value = grandTotal.toFixed(2);
+        }
+      }
+
+      if (mode === "Due") {
+        dueEl.value = grandTotal.toFixed(2);
+      }
+
+      document.getElementById("duePreviewText").textContent = num(dueEl.value).toFixed(2);
+      document.getElementById("onlinePayNowText").textContent = num(paidEl.value || grandTotal).toFixed(2);
+      generatePaymentQr();
+    }
+
+    function handlePaymentStatusChange() {
+      autoSetAmounts();
+      syncAmountsFromInputs();
+    }
+
+    function handlePaymentModeChange() {
+      const mode = document.getElementById("billPaymentMode").value;
+
+      document.getElementById("onlinePaymentBox").classList.add("payment-section-hidden");
+      document.getElementById("duePaymentBox").classList.add("payment-section-hidden");
+      document.getElementById("metalPaymentBox").classList.add("payment-section-hidden");
+
+      if (mode === "Online") {
+        document.getElementById("onlinePaymentBox").classList.remove("payment-section-hidden");
+      } else if (mode === "Due") {
+        document.getElementById("duePaymentBox").classList.remove("payment-section-hidden");
+      } else if (mode === "Metal") {
+        document.getElementById("metalPaymentBox").classList.remove("payment-section-hidden");
+      }
+
+      autoSetAmounts();
+      calculateMetalSettlement();
+      generatePaymentQr();
+    }
+
+    function calculateMetalSettlement() {
+      const totalWeight = billingItems.reduce((sum, item) => sum + num(item.weight), 0);
+      const percent = num(document.getElementById("billMetalPercent").value);
+
+      const payableMetal = totalWeight * (percent / 100);
+
+      const totalWeightText = totalWeight.toFixed(3);
+      const payableText = payableMetal.toFixed(3) + " g";
+
+      const totalWeightEl = document.getElementById("billMetalTotalWeight");
+      const payableEl = document.getElementById("billMetalPayable");
+      const previewEl = document.getElementById("metalPreviewText");
+
+      if (totalWeightEl) totalWeightEl.value = totalWeightText + " g";
+      if (payableEl) payableEl.value = payableText;
+      if (previewEl) previewEl.textContent = payableText;
+    }
+
+    function clearQrBox() {
+      const qrBox = document.getElementById("billQrCode");
+      if (qrBox) qrBox.innerHTML = "";
+      qrInstance = null;
+    }
+
+    function generatePaymentQr() {
+      const mode = document.getElementById("billPaymentMode").value;
+      const qrBox = document.getElementById("billQrCode");
+      const upiId = document.getElementById("billUpiId").value.trim();
+      const upiName = document.getElementById("billUpiName").value.trim() || "RAJPATI ENTERPRISE";
+      const note = document.getElementById("billUpiNote").value.trim() || "Invoice Payment";
+      const invoiceNo = document.getElementById("billInvoiceNumber").value.trim() || "BILL";
+      const grandTotal = num(document.getElementById("billGrandTotal").value);
+      const paidAmount = num(document.getElementById("billPaidAmount").value || grandTotal);
+
+      document.getElementById("onlineGrandTotalText").textContent = grandTotal.toFixed(2);
+      document.getElementById("onlinePayNowText").textContent = paidAmount.toFixed(2);
+      document.getElementById("duePreviewText").textContent = num(document.getElementById("billDueAmount").value).toFixed(2);
+
+      if (mode !== "Online") {
+        clearQrBox();
+        return;
+      }
+
+      if (!qrBox) return;
+
+      qrBox.innerHTML = "";
+
+      if (!upiId || paidAmount <= 0) {
+        qrBox.innerHTML = `<div style="text-align:center; font-size:13px; color:#64748b;">UPI ID aur payable amount do</div>`;
+        return;
+      }
+
+      const txnNote = `${note} ${invoiceNo}`.trim();
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${paidAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(txnNote)}`;
+
+      qrInstance = new QRCode(qrBox, {
+        text: upiUrl,
+        width: 200,
+        height: 200
+      });
     }
 
     function getBillingRecord() {
@@ -589,6 +927,15 @@
       const grandTotal = num(document.getElementById("billGrandTotal").value);
       const totalWeight = billingItems.reduce((sum, item) => sum + num(item.weight), 0);
 
+      const upiId = document.getElementById("billUpiId").value.trim() || "";
+      const upiName = document.getElementById("billUpiName").value.trim() || "";
+      const upiNote = document.getElementById("billUpiNote").value.trim() || "";
+      const dueNote = document.getElementById("billDueNote").value.trim() || "";
+      const reminderMode = document.getElementById("billReminderMode").value || "";
+      const metalPercent = num(document.getElementById("billMetalPercent").value);
+      const metalPayable = num((document.getElementById("billMetalPayable").value || "").replace(/[^\d.]/g, ""));
+      const metalNote = document.getElementById("billMetalNote").value.trim() || "";
+
       return {
         id: invoiceNumber || ("BILL-" + Date.now()),
         invoiceNumber,
@@ -613,6 +960,14 @@
         totalCount: billingItems.length,
         totalWeight,
         items: billingItems.map((item) => ({ ...item })),
+        upiId,
+        upiName,
+        upiNote,
+        dueNote,
+        reminderMode,
+        metalPercent,
+        metalPayable,
+        metalNote,
         savedAt: new Date().toLocaleString(),
         source: "billing"
       };
@@ -681,6 +1036,8 @@
       const grandTotal = num(record.grandTotal).toFixed(2);
       const ratePerGram = num(record.ratePerGram).toFixed(2);
       const mcRate = num(record.mcRate).toFixed(2);
+      const metalPercent = num(record.metalPercent).toFixed(2);
+      const metalPayable = num(record.metalPayable).toFixed(3);
 
       let rows = "";
       let totalWeight = 0;
@@ -717,6 +1074,16 @@
           )
         : `
           <tr><td><strong>GST</strong></td><td>₹ 0.00</td></tr>
+        `;
+
+      const extraPaymentInfo = paymentMode === "Metal"
+        ? `
+          <div><strong>Metal %:</strong> ${metalPercent}%</div>
+          <div><strong>Payable Metal:</strong> ${metalPayable} g</div>
+        `
+        : `
+          <div><strong>Paid Amount:</strong> ₹ ${paidAmount}</div>
+          <div><strong>Due Amount:</strong> ₹ ${dueAmount}</div>
         `;
 
       return `
@@ -800,7 +1167,7 @@
       </tbody>
     </table>
 
-    <div style="margin-top:8px; font-size:14px; display:flex; justify-content:space-between;">
+    <div style="margin-top:8px; font-size:14px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
       <div><strong>Payment (${paymentStatus || "-"})</strong></div>
       <div><strong>Payment Mode:</strong> ${paymentMode || "-"}</div>
       <div><strong>Bill Type:</strong> ${billType}</div>
@@ -809,8 +1176,7 @@
     <div class="summary-grid">
       <div class="left-summary">
         <div><strong>DATE:</strong> ${billDate}</div>
-        <div><strong>Paid Amount:</strong> ₹ ${paidAmount}</div>
-        <div><strong>Due Amount:</strong> ₹ ${dueAmount}</div>
+        ${extraPaymentInfo}
         <div><strong>Address:</strong> ${businessAddress}</div>
       </div>
 
@@ -918,6 +1284,12 @@
       if (!billingItems.length) {
         loadItemsFromInvoice(false);
       }
+
+      document.getElementById("billUpiName").value = "RAJPATI ENTERPRISE";
+      document.getElementById("billUpiNote").value = "Invoice Payment";
+      document.getElementById("billReminderMode").value = "Manual";
+
+      handlePaymentModeChange();
     });
   </script>
 </body>
