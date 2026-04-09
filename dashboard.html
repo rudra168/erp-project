@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ERP Dashboard</title>
-<link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     .summary-row.summary-row-6 {
@@ -190,38 +190,34 @@
     }
   </style>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireLogin();
-</script>
 <body>
   <div class="layout">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-inner">
-      <div class="brand">
-        <h2>ERP PANEL</h2>
-        <p>Jewellery Management</p>
-      </div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Jewellery Management</p>
+        </div>
 
-      <ul class="menu"></ul>
-  <li><a href="dashboard.html" class="active"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
-  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
-  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
-  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
-  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
-  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
-  <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
-  <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
-  <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
-  <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
-</ul>
-    </div>
-  </aside>
+        <ul class="menu">
+          <li><a href="dashboard.html" class="active"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+          <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+          <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+          <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+          <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+          <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+          <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+          <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+          <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+          <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+        </ul>
+      </div>
+    </aside>
 
     <main class="main">
       <div class="topbar">
         <div class="top-left">
-          <button class="hamburger" onclick="toggleSidebar()">
+          <button class="hamburger" type="button" onclick="toggleSidebar()">
             <span></span>
             <span></span>
             <span></span>
@@ -234,7 +230,7 @@ requireLogin();
         </div>
 
         <div class="top-right">
-          <button onclick="window.print()">Print</button>
+          <button type="button" onclick="window.print()">Print</button>
           <div class="profile-box"></div>
         </div>
       </div>
@@ -244,7 +240,6 @@ requireLogin();
           ⚠️ Low Stock Alert: <span id="lowStockCount">0</span> low-stock lot(s) found.
         </div>
 
-        <!-- Top Summary -->
         <div class="summary-row summary-row-6">
           <div class="summary-card">
             <div class="summary-icon">📦</div>
@@ -301,7 +296,6 @@ requireLogin();
           </div>
         </div>
 
-        <!-- Lot Summary -->
         <div class="panel">
           <h3>Lot Summary</h3>
           <p class="subtext">Lot wise stock, sold, return and damage summary</p>
@@ -327,7 +321,6 @@ requireLogin();
           </div>
         </div>
 
-        <!-- Useful Blocks -->
         <div class="grid-2">
           <div class="panel">
             <h3>Sales by Lot</h3>
@@ -738,64 +731,10 @@ requireLogin();
       startDashboardAutoRefresh();
     });
   </script>
+
+  <script src="js/auth.js"></script>
   <script>
-function setupSidebarByRole() {
-  const user = JSON.parse(localStorage.getItem("erpLoggedInUser"));
-
-  if (!user) return;
-
-  const role = user.role;
-  const menu = document.getElementById("sidebarMenu");
-
-  if (!menu) return;
-
-  // Sab menu items
-  const items = menu.querySelectorAll("li");
-
-  items.forEach(item => {
-    const text = item.innerText.toLowerCase();
-
-    // Admin sab dekh sakta hai
-    if (role === "Admin") return;
-
-    // Billing role
-    if (role === "Billing") {
-      if (
-        text.includes("billing") ||
-        text.includes("invoice") ||
-        text.includes("dashboard") ||
-        text.includes("sales")
-      ) return;
-      item.style.display = "none";
-    }
-
-    // Stock role
-    else if (role === "Stock") {
-      if (
-        text.includes("stock") ||
-        text.includes("dashboard")
-      ) return;
-      item.style.display = "none";
-    }
-
-    // Sticker role
-    else if (role === "Sticker") {
-      if (
-        text.includes("sticker") ||
-        text.includes("dashboard")
-      ) return;
-      item.style.display = "none";
-    }
-
-    // Default: hide sab
-    else {
-      item.style.display = "none";
-    }
-  });
-}
-
-// Page load pe run karo
-window.addEventListener("load", setupSidebarByRole);
-</script>
+    requireLogin();
+  </script>
 </body>
 </html>
