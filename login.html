@@ -624,6 +624,8 @@
   }
 
   try {
+    console.log("Login API call ho raha...");
+
     const res = await fetch("https://erp-backend-5ya9.onrender.com/login", {
       method: "POST",
       headers: {
@@ -632,17 +634,25 @@
       body: JSON.stringify({ email, password })
     });
 
+    console.log("Response status:", res.status);
+
     const data = await res.json();
+
+    console.log("Response data:", data);
 
     if (data.success) {
       localStorage.setItem("erpLoggedInUser", JSON.stringify(data.user));
+
+      alert("Login success ✅");
+
       window.location.href = "dashboard.html";
     } else {
-      alert(data.message || "Login failed");
+      alert(data.message || "Login failed ❌");
     }
+
   } catch (error) {
-    console.log("Login fetch error:", error);
-    alert("Server connection error");
+    console.error("Login error:", error);
+    alert("Server connection error ❌");
   }
 }
 

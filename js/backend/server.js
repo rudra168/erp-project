@@ -627,29 +627,31 @@ app.put("/returnItem/:barcode", async (req, res) => {
 /* =========================
    DEFAULT
 ========================= */
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  const sql = "SELECT * FROM users WHERE email=? AND password=?";
+    const [rows] = await db.query(
+      "SELECT * FROM users WHERE email = ? AND password = ?",
+      [email, password]
+    );
 
-  db.query(sql, [email, password], (err, result) => {
-    if (err) {
-      console.log("Login error:", err);
-      return res.json({ success: false, message: "Server error" });
-    }
-
-    if (result.length === 0) {
+    if (!rows.length) {
       return res.json({ success: false, message: "Invalid login" });
     }
 
-    const user = result[0];
+    const user = rows[0];
 
     if (user.status !== "approved") {
       return res.json({ success: false, message: "Pending approval" });
     }
 
     res.json({ success: true, user });
-  });
+
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 app.get("/", (req, res) => {
   res.json({ success: true, message: "ERP backend running" });
