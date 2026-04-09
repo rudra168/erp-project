@@ -155,10 +155,6 @@
     }
   </style>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireRole(["Admin", "Billing"]);
-</script>
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -167,7 +163,8 @@ requireRole(["Admin", "Billing"]);
           <h2>ERP PANEL</h2>
           <p>Jewellery Management</p>
         </div>
-        <ul class="menu"></ul>
+
+        <ul class="menu">
           <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
           <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
           <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
@@ -211,7 +208,6 @@ requireRole(["Admin", "Billing"]);
           <h2>Billing</h2>
           <p>Invoice se item auto billing me aayega. Yahan final bill, QR, due aur metal settlement sab manage hoga.</p>
 
-          <!-- 1. CUSTOMER DETAILS -->
           <div class="sub-card">
             <h3>Customer Details</h3>
 
@@ -243,7 +239,6 @@ requireRole(["Admin", "Billing"]);
             </div>
           </div>
 
-          <!-- 2. BILLING SUMMARY -->
           <div class="sub-card" style="margin-top:16px;">
             <h3>Billing Summary</h3>
 
@@ -306,7 +301,6 @@ requireRole(["Admin", "Billing"]);
             </div>
           </div>
 
-          <!-- 3. QUICK SUMMARY -->
           <div class="sub-card" style="margin-top:16px;">
             <h3>Quick Summary</h3>
 
@@ -318,7 +312,6 @@ requireRole(["Admin", "Billing"]);
             </div>
           </div>
 
-          <!-- 4. BILLING TABLE -->
           <div class="sub-card" style="margin-top:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
               <h3>Billing Table</h3>
@@ -352,7 +345,6 @@ requireRole(["Admin", "Billing"]);
             </div>
           </div>
 
-          <!-- OPTIONAL MANUAL ENTRY -->
           <div id="manualEntryBox" class="optional-box hidden-box">
             <h3>Manual Item Entry (Optional)</h3>
 
@@ -394,7 +386,6 @@ requireRole(["Admin", "Billing"]);
             </div>
           </div>
 
-          <!-- 5. PAYMENT DETAILS -->
           <div class="sub-card" style="margin-top:16px;">
             <h3>Payment Details</h3>
 
@@ -524,7 +515,6 @@ requireRole(["Admin", "Billing"]);
               <button type="button" class="secondary-btn" onclick="downloadBillingInvoice()">Download</button>
             </div>
           </div>
-
         </div>
       </section>
     </main>
@@ -1497,11 +1487,10 @@ requireRole(["Admin", "Billing"]);
       updateQuickSummary();
     });
   </script>
+
   <script src="js/auth.js"></script>
-<script>
-requireLogin();
-</script>
-</body>
-</html>
+  <script>
+    requireRole(["Admin", "Billing"]);
+  </script>
 </body>
 </html>
