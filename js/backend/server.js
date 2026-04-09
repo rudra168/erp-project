@@ -41,7 +41,7 @@ const dbConfig = process.env.DATABASE_URL
       connectionLimit: 10,
       queueLimit: 0
     };
-
+const db = mysql.createPool(dbConfig);
 const pool = dbConfig.uri
   ? mysql.createPool(dbConfig.uri)
   : mysql.createPool(dbConfig);
