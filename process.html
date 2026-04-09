@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,10 +90,6 @@
     }
   </style>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireRole(["Admin", "Process"]);
-</script>
 <body>
   <div class="toast-container" id="toastContainer"></div>
 
@@ -106,25 +101,25 @@ requireRole(["Admin", "Process"]);
           <p>Jewellery Management</p>
         </div>
 
-      <ul class="menu"></ul>
-  <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
-  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
-  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
-  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
-  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
-  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
-  <li><a href="process.html" class="active"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
-  <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
-  <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
-  <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
-</ul>
+        <ul class="menu">
+          <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+          <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+          <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+          <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+          <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+          <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+          <li><a href="process.html" class="active"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+          <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+          <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+          <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+        </ul>
       </div>
     </aside>
 
     <main class="main">
       <div class="topbar">
         <div class="top-left">
-          <button class="hamburger" onclick="toggleSidebar()">
+          <button class="hamburger" type="button" onclick="toggleSidebar()">
             <span></span>
             <span></span>
             <span></span>
@@ -132,7 +127,7 @@ requireRole(["Admin", "Process"]);
 
           <div class="title">
             <h1>RPJ MANUFACTURER</h1>
-            <p>ERP Dashboard Template</p>
+            <p>Process Management</p>
           </div>
         </div>
 
@@ -152,9 +147,7 @@ requireRole(["Admin", "Process"]);
           <h2>Process</h2>
           <p>Yahan lot, raw weight, loss, karigar work aur process summary manage hoga.</p>
 
-          <!-- ROW 1 -->
           <div class="process-two-col">
-            <!-- PROCESS ENTRY -->
             <div class="sub-card">
               <h3>Process Entry</h3>
 
@@ -201,7 +194,6 @@ requireRole(["Admin", "Process"]);
               </div>
             </div>
 
-            <!-- SAVED PROCESS LOTS -->
             <div class="sub-card">
               <h3>Saved Process Lots</h3>
               <table>
@@ -220,9 +212,7 @@ requireRole(["Admin", "Process"]);
             </div>
           </div>
 
-          <!-- ROW 2 -->
           <div class="process-two-col">
-            <!-- KARIGAR ENTRY -->
             <div class="sub-card">
               <h3>Karigar Work Entry</h3>
 
@@ -256,7 +246,6 @@ requireRole(["Admin", "Process"]);
               <div id="karigarList" style="margin-top: 14px;"></div>
             </div>
 
-            <!-- KARIGAR LOSS REPORT -->
             <div class="sub-card">
               <h3>Karigar Loss Report</h3>
               <table>
@@ -590,11 +579,10 @@ requireRole(["Admin", "Process"]);
       updateProcessCalculations();
     });
   </script>
+
   <script src="js/auth.js"></script>
-<script>
-requireLogin();
-</script>
-</body>
-</html>
+  <script>
+    requireRole(["Admin", "Process"]);
+  </script>
 </body>
 </html>
