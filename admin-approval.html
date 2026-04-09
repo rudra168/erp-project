@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Approval Panel</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    .approval-wrap {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .approval-card,
+    .summary-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      border: 1px solid #edf2f7;
+    }
+
+    .approval-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .approval-head h3,
+    .summary-card h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #1e293b;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .summary-box {
+      border-radius: 14px;
+      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .summary-box p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .summary-box h2 {
+      margin: 8px 0 0;
+      color: #0f172a;
+      font-size: 24px;
+    }
+
+    .search-box {
+      position: relative;
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid #dbe3ec;
+      padding: 0 14px 0 38px;
+      outline: none;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .search-box input:focus {
+      border-color: #c58b2b;
+      box-shadow: 0 0 0 4px rgba(197, 139, 43, 0.12);
+    }
+
+    .approval-table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .approval-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    .approval-table th,
+    .approval-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #edf2f7;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    .approval-table th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .approval-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .mini-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #e8bd73, #c58b2b);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .user-cell {
+      display: flex;
+      align-items: center;
+      min-width: 200px;
+    }
+
+    .user-cell .user-meta strong {
+      display: block;
+      color: #1e293b;
+      font-size: 14px;
+    }
+
+    .user-cell .user-meta span {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid #e2e8f0;
+    }
+
+    .status-pending {
+      background: #fff7ed;
+      color: #9a3412;
+      border-color: #fed7aa;
+    }
+
+    .status-approved {
+      background: #ecfdf5;
+      color: #166534;
+      border-color: #a7f3d0;
+    }
+
+    .status-rejected {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .role-select {
+      width: 150px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #dbe3ec;
+      padding: 0 10px;
+      outline: none;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .role-select:focus {
+      border-color: #c58b2b;
+      box-shadow: 0 0 0 4px rgba(197, 139, 43, 0.12);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .approve-btn,
+    .reject-btn,
+    .refresh-btn,
+    .logout-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .approve-btn {
+      background: linear-gradient(180deg, #e8bd73, #c58b2b);
+      color: #fff;
+    }
+
+    .reject-btn {
+      background: #7f1d1d;
+      color: #fff;
+    }
+
+    .refresh-btn {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .logout-btn {
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .empty-box {
+      text-align: center;
+      padding: 40px 16px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .recent-list {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .recent-item {
+      border: 1px solid #edf2f7;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .recent-item strong {
+      color: #1e293b;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .recent-item p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .small-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 980px) {
+      .approval-wrap {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <h2>ERP PANEL</h2>
+          <p>Admin Approval</p>
+        </div>
+
+        <ul class="menu">
+          <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+          <li><a href="admin-approval.html" class="active"><i class="fas fa-user-check"></i> Admin Approval</a></li>
+          <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
+          <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+          <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+          <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+          <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <button class="hamburger" type="button" onclick="toggleSidebar()">
+            <span></span><span></span><span></span>
+          </button>
+
+          <div class="title">
+            <h1>RPJ MANUFACTURER</h1>
+            <p>User Approval Management</p>
+          </div>
+        </div>
+
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <button class="refresh-btn" type="button" onclick="loadApprovalData()">
+            <i class="fas fa-rotate-right"></i> Refresh
+          </button>
+          <button class="logout-btn" type="button" onclick="logoutUser()">
+            <i class="fas fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      </div>
+
+      <div class="approval-wrap">
+        <div class="approval-card">
+          <div class="approval-head">
+            <h3>Pending User Requests</h3>
+
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="approvalSearch" placeholder="Search by name / email / mobile" oninput="renderPendingUsers()" />
+            </div>
+          </div>
+
+          <div class="approval-table-wrap">
+            <table class="approval-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Mobile</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Assign Role</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="pendingUsersBody"></tbody>
+            </table>
+          </div>
+
+          <div class="small-note">
+            Note: Abhi ye panel current pending requests ko handle kar raha hai. Next step me isko real backend approval API se connect karenge.
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <h3>Approval Summary</h3>
+
+          <div class="summary-grid">
+            <div class="summary-box">
+              <p>Total Pending</p>
+              <h2 id="pendingCount">0</h2>
+            </div>
+
+            <div class="summary-box">
+              <p>Total Approved</p>
+              <h2 id="approvedCount">0</h2>
+            </div>
+          </div>
+
+          <div class="recent-list" id="recentApprovedList"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) sidebar.classList.toggle("collapsed");
+    }
+
+    function logoutUser() {
+      localStorage.removeItem("erpLoggedInUser");
+      window.location.href = "login.html";
+    }
+
+    function getPendingUsers() {
+      const data = JSON.parse(localStorage.getItem("erpPendingUsers")) || [];
+      return Array.isArray(data) ? data : [];
+    }
+
+    function getApprovedUsers() {
+      const data = JSON.parse(localStorage.getItem("erpApprovedUsers")) || [];
+      return Array.isArray(data) ? data : [];
+    }
+
+    function savePendingUsers(list) {
+      localStorage.setItem("erpPendingUsers", JSON.stringify(list));
+    }
+
+    function saveApprovedUsers(list) {
+      localStorage.setItem("erpApprovedUsers", JSON.stringify(list));
+    }
+
+    function getSearchText() {
+      return String(document.getElementById("approvalSearch")?.value || "").trim().toLowerCase();
+    }
+
+    function renderPendingUsers() {
+      const tbody = document.getElementById("pendingUsersBody");
+      const pendingUsers = getPendingUsers();
+      const searchText = getSearchText();
+
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const filtered = pendingUsers.filter((user) => {
+        const hay = `${user.name || ""} ${user.email || ""} ${user.mobile || ""}`.toLowerCase();
+        return hay.includes(searchText);
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6">
+              <div class="empty-box">No pending user requests found</div>
+            </td>
+          </tr>
+        `;
+        updateSummary();
+        return;
+      }
+
+      filtered.forEach((user) => {
+        const initials = String(user.name || "U").trim().charAt(0).toUpperCase();
+
+        tbody.innerHTML += `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="mini-avatar">${initials}</div>
+                <div class="user-meta">
+                  <strong>${user.name || "-"}</strong>
+                  <span>Requested: ${user.createdAt || "-"}</span>
+                </div>
+              </div>
+            </td>
+            <td>${user.mobile || "-"}</td>
+            <td>${user.email || "-"}</td>
+            <td><span class="status-pill status-pending">Pending</span></td>
+            <td>
+              <select class="role-select" id="role-${user.id}">
+                <option value="">Select Role</option>
+                <option value="Admin">Admin</option>
+                <option value="Billing">Billing</option>
+                <option value="Invoice">Invoice</option>
+                <option value="Stock">Stock</option>
+                <option value="Sticker">Sticker</option>
+              </select>
+            </td>
+            <td>
+              <div class="btn-row">
+                <button class="approve-btn" type="button" onclick="approveUser('${user.id}')">
+                  <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="reject-btn" type="button" onclick="rejectUser('${user.id}')">
+                  <i class="fas fa-xmark"></i> Reject
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      updateSummary();
+    }
+
+    function approveUser(userId) {
+      let pendingUsers = getPendingUsers();
+      let approvedUsers = getApprovedUsers();
+
+      const user = pendingUsers.find((item) => String(item.id) === String(userId));
+      if (!user) return;
+
+      const role = document.getElementById(`role-${userId}`)?.value || "";
+      if (!role) {
+        alert("Pehle role select karo");
+        return;
+      }
+
+      const alreadyApproved = approvedUsers.some(
+        (item) => String(item.email || "").toLowerCase() === String(user.email || "").toLowerCase()
+      );
+
+      const approvedUser = {
+        ...user,
+        role,
+        status: "approved",
+        approvedAt: new Date().toLocaleString()
+      };
+
+      if (!alreadyApproved) {
+        approvedUsers.unshift(approvedUser);
+      } else {
+        approvedUsers = approvedUsers.map((item) =>
+          String(item.email || "").toLowerCase() === String(user.email || "").toLowerCase()
+            ? approvedUser
+            : item
+        );
+      }
+
+      pendingUsers = pendingUsers.filter((item) => String(item.id) !== String(userId));
+
+      savePendingUsers(pendingUsers);
+      saveApprovedUsers(approvedUsers);
+
+      alert(`${user.name} approved as ${role}`);
+      loadApprovalData();
+    }
+
+    function rejectUser(userId) {
+      let pendingUsers = getPendingUsers();
+      const user = pendingUsers.find((item) => String(item.id) === String(userId));
+      if (!user) return;
+
+      const ok = confirm(`Reject ${user.name}?`);
+      if (!ok) return;
+
+      pendingUsers = pendingUsers.filter((item) => String(item.id) !== String(userId));
+      savePendingUsers(pendingUsers);
+
+      alert(`${user.name} rejected`);
+      loadApprovalData();
+    }
+
+    function updateSummary() {
+      const pendingUsers = getPendingUsers();
+      const approvedUsers = getApprovedUsers();
+
+      document.getElementById("pendingCount").textContent = pendingUsers.length;
+      document.getElementById("approvedCount").textContent = approvedUsers.length;
+
+      renderRecentApproved();
+    }
+
+    function renderRecentApproved() {
+      const box = document.getElementById("recentApprovedList");
+      const approvedUsers = getApprovedUsers();
+
+      if (!box) return;
+      box.innerHTML = `<h3 style="margin-top:18px;">Recently Approved</h3>`;
+
+      if (!approvedUsers.length) {
+        box.innerHTML += `
+          <div class="recent-item">
+            <p>No approved users yet</p>
+          </div>
+        `;
+        return;
+      }
+
+      approvedUsers.slice(0, 5).forEach((user) => {
+        box.innerHTML += `
+          <div class="recent-item">
+            <strong>${user.name || "-"}</strong>
+            <p>
+              Email: ${user.email || "-"}<br>
+              Role: ${user.role || "-"}<br>
+              Approved: ${user.approvedAt || "-"}
+            </p>
+          </div>
+        `;
+      });
+    }
+
+    function loadApprovalData() {
+      renderPendingUsers();
+      updateSummary();
+    }
+
+    window.addEventListener("load", function () {
+      const loggedInUser = JSON.parse(localStorage.getItem("erpLoggedInUser"));
+      if (!loggedInUser) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      loadApprovalData();
+    });
+  </script>
+</body>
+</html>
