@@ -155,6 +155,10 @@
     }
   </style>
 </head>
+<script src="js/auth.js"></script>
+<script>
+requireRole(["Admin", "Billing"]);
+</script>
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -163,7 +167,7 @@
           <h2>ERP PANEL</h2>
           <p>Jewellery Management</p>
         </div>
-        <ul class="menu">
+        <ul class="menu" id="sidebarMenu"></ul>
           <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
           <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
           <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
@@ -1493,5 +1497,64 @@
       updateQuickSummary();
     });
   </script>
+  <script>
+function setupSidebarByRole() {
+  const user = JSON.parse(localStorage.getItem("erpLoggedInUser"));
+
+  if (!user) return;
+
+  const role = user.role;
+  const menu = document.getElementById("sidebarMenu");
+
+  if (!menu) return;
+
+  // Sab menu items
+  const items = menu.querySelectorAll("li");
+
+  items.forEach(item => {
+    const text = item.innerText.toLowerCase();
+
+    // Admin sab dekh sakta hai
+    if (role === "Admin") return;
+
+    // Billing role
+    if (role === "Billing") {
+      if (
+        text.includes("billing") ||
+        text.includes("invoice") ||
+        text.includes("dashboard") ||
+        text.includes("sales")
+      ) return;
+      item.style.display = "none";
+    }
+
+    // Stock role
+    else if (role === "Stock") {
+      if (
+        text.includes("stock") ||
+        text.includes("dashboard")
+      ) return;
+      item.style.display = "none";
+    }
+
+    // Sticker role
+    else if (role === "Sticker") {
+      if (
+        text.includes("sticker") ||
+        text.includes("dashboard")
+      ) return;
+      item.style.display = "none";
+    }
+
+    // Default: hide sab
+    else {
+      item.style.display = "none";
+    }
+  });
+}
+
+// Page load pe run karo
+window.addEventListener("load", setupSidebarByRole);
+</script>
 </body>
 </html>
