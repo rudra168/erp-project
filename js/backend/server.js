@@ -627,6 +627,30 @@ app.put("/returnItem/:barcode", async (req, res) => {
 /* =========================
    DEFAULT
 ========================= */
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+
+  const sql = "SELECT * FROM users WHERE email=? AND password=?";
+
+  db.query(sql, [email, password], (err, result) => {
+    if (err) {
+      console.log("Login error:", err);
+      return res.json({ success: false, message: "Server error" });
+    }
+
+    if (result.length === 0) {
+      return res.json({ success: false, message: "Invalid login" });
+    }
+
+    const user = result[0];
+
+    if (user.status !== "approved") {
+      return res.json({ success: false, message: "Pending approval" });
+    }
+
+    res.json({ success: true, user });
+  });
+});
 app.get("/", (req, res) => {
   res.json({ success: true, message: "ERP backend running" });
 });
