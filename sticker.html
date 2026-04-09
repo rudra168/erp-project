@@ -198,10 +198,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireRole(["Admin", "Sticker"]);
-</script>
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -211,7 +207,7 @@ requireRole(["Admin", "Sticker"]);
           <p>Jewellery Management</p>
         </div>
 
-        <ul class="menu"></ul>
+        <ul class="menu">
           <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
           <li><a href="sticker.html" class="active"><i class="fas fa-barcode"></i> Sticker</a></li>
           <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
@@ -1274,11 +1270,10 @@ requireRole(["Admin", "Sticker"]);
       });
     });
   </script>
- <script src="js/auth.js"></script>
-<script>
-requireLogin();
-</script>
-</body>
-</html>
+
+  <script src="js/auth.js"></script>
+  <script>
+    requireRole(["Admin", "Sticker"]);
+  </script>
 </body>
 </html>
