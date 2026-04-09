@@ -198,8 +198,7 @@
       cursor: pointer;
     }
 
-    .input-wrap input,
-    .input-wrap select {
+    .input-wrap input {
       width: 100%;
       height: 52px;
       border: 1px solid #dbe3ec;
@@ -216,8 +215,7 @@
       padding-right: 14px;
     }
 
-    .input-wrap input:focus,
-    .input-wrap select:focus {
+    .input-wrap input:focus {
       border-color: #c58b2b;
       box-shadow: 0 0 0 4px rgba(197, 139, 43, 0.13);
     }
@@ -451,25 +449,11 @@
               </div>
             </div>
 
-            <div class="input-box">
+            <div class="input-box full">
               <label>Email</label>
               <div class="input-wrap">
                 <i class="fas fa-envelope left-icon"></i>
                 <input type="email" id="regEmail" class="no-right" placeholder="Enter email" />
-              </div>
-            </div>
-
-            <div class="input-box">
-              <label>Requested Role</label>
-              <div class="input-wrap">
-                <i class="fas fa-briefcase left-icon"></i>
-                <select id="regRole">
-                  <option value="">Select Role</option>
-                  <option value="Billing">Billing</option>
-                  <option value="Invoice">Invoice</option>
-                  <option value="Stock">Stock</option>
-                  <option value="Sticker">Sticker</option>
-                </select>
               </div>
             </div>
 
@@ -588,83 +572,47 @@
       }
     }
 
-    function getUsers() {
-      return JSON.parse(localStorage.getItem("erpUsers")) || [];
-    }
+    async function loginUser() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
 
-    function saveUsers(users) {
-      localStorage.setItem("erpUsers", JSON.stringify(users));
-    }
+      if (!email || !password) {
+        alert("Email aur password daalo");
+        return;
+      }
 
-    function ensureDemoAdmin() {
-      const users = getUsers();
-      const hasAdmin = users.some((u) => u.email === "admin@erp.com");
-
-      if (!hasAdmin) {
-        users.push({
-          id: "USR-" + Date.now(),
-          name: "Main Admin",
-          mobile: "9999999999",
-          email: "admin@erp.com",
-          password: "1234",
-          role: "Admin",
-          status: "approved"
+      try {
+        const res = await fetch("https://erp-backend-5ya9.onrender.com/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, password })
         });
-        saveUsers(users);
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem("erpLoggedInUser", JSON.stringify(data.user));
+          alert("Login success ✅");
+          window.location.href = "dashboard.html";
+        } else {
+          alert(data.message || "Login failed ❌");
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        alert("Server connection error ❌");
       }
     }
-
-    async function loginUser() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
-
-  if (!email || !password) {
-    alert("Email aur password daalo");
-    return;
-  }
-
-  try {
-    console.log("Login API call ho raha...");
-
-    const res = await fetch("https://erp-backend-5ya9.onrender.com/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email, password })
-    });
-
-    console.log("Response status:", res.status);
-
-    const data = await res.json();
-
-    console.log("Response data:", data);
-
-    if (data.success) {
-      localStorage.setItem("erpLoggedInUser", JSON.stringify(data.user));
-
-      alert("Login success ✅");
-
-      window.location.href = "dashboard.html";
-    } else {
-      alert(data.message || "Login failed ❌");
-    }
-
-  } catch (error) {
-    console.error("Login error:", error);
-    alert("Server connection error ❌");
-  }
-}
 
     function registerUser() {
       const name = document.getElementById("regName").value.trim();
       const mobile = document.getElementById("regMobile").value.trim();
       const email = document.getElementById("regEmail").value.trim().toLowerCase();
-      const role = document.getElementById("regRole").value.trim();
       const password = document.getElementById("regPassword").value.trim();
       const confirmPassword = document.getElementById("regConfirmPassword").value.trim();
 
-      if (!name || !mobile || !email || !role || !password || !confirmPassword) {
+      if (!name || !mobile || !email || !password || !confirmPassword) {
         showStatus("registerStatus", "Saare fields fill karo.", "error");
         return;
       }
@@ -679,36 +627,36 @@
         return;
       }
 
-      const users = getUsers();
-      const exists = users.some((u) => String(u.email).toLowerCase() === email);
+      const pendingUsers = JSON.parse(localStorage.getItem("erpPendingUsers")) || [];
+      const exists = pendingUsers.some((u) => String(u.email).toLowerCase() === email);
 
       if (exists) {
-        showStatus("registerStatus", "Ye email pehle se registered hai.", "error");
+        showStatus("registerStatus", "Ye email pehle se pending list me hai.", "error");
         return;
       }
 
-      users.push({
+      pendingUsers.push({
         id: "USR-" + Date.now(),
         name,
         mobile,
         email,
         password,
-        role,
-        status: "pending"
+        role: "",
+        status: "pending",
+        createdAt: new Date().toLocaleString()
       });
 
-      saveUsers(users);
+      localStorage.setItem("erpPendingUsers", JSON.stringify(pendingUsers));
 
       showStatus(
         "registerStatus",
-        "Account create ho gaya. Abhi pending approval me hai. Admin approve karega tabhi login hoga.",
+        "Account request submit ho gaya. Admin approve karke role assign karega, tabhi login hoga.",
         "success"
       );
 
       document.getElementById("regName").value = "";
       document.getElementById("regMobile").value = "";
       document.getElementById("regEmail").value = "";
-      document.getElementById("regRole").value = "";
       document.getElementById("regPassword").value = "";
       document.getElementById("regConfirmPassword").value = "";
     }
@@ -721,24 +669,12 @@
         return;
       }
 
-      const users = getUsers();
-      const user = users.find((u) => String(u.email).toLowerCase() === email);
-
-      if (!user) {
-        showStatus("forgotStatus", "Is email se koi account nahi mila.", "error");
-        return;
-      }
-
       showStatus(
         "forgotStatus",
-        "Reset request create ho gaya. Backend connect hone ke baad email/OTP se password reset hoga.",
+        "Reset password backend ke saath next step me connect hoga.",
         "info"
       );
     }
-
-    window.addEventListener("load", function () {
-      ensureDemoAdmin();
-    });
   </script>
 </body>
 </html>
