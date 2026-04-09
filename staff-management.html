@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,10 +81,6 @@
     }
   </style>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireRole(["Admin"]);
-</script>
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -95,25 +90,25 @@ requireRole(["Admin"]);
           <p>Jewellery Management</p>
         </div>
 
-        <ul class="menu"></ul>
-  <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
-  <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
-  <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
-  <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
-  <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
-  <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
-  <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
-  <li><a href="staff-management.html" class="active"><i class="fas fa-users"></i> Staff Management</a></li>
-  <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
-  <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
-</ul>
+        <ul class="menu">
+          <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+          <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+          <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
+          <li><a href="sales-history.html"><i class="fas fa-clock-rotate-left"></i> Sales History</a></li>
+          <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
+          <li><a href="billing.html"><i class="fas fa-money-bill-wave"></i> Billing</a></li>
+          <li><a href="process.html"><i class="fas fa-screwdriver-wrench"></i> Process</a></li>
+          <li><a href="staff-management.html" class="active"><i class="fas fa-users"></i> Staff Management</a></li>
+          <li><a href="expense-manager.html"><i class="fas fa-wallet"></i> Expense Manager</a></li>
+          <li><a href="transaction.html"><i class="fas fa-arrow-right-arrow-left"></i> Transaction</a></li>
+        </ul>
       </div>
     </aside>
 
     <main class="main">
       <div class="topbar">
         <div class="top-left">
-          <button class="hamburger" onclick="toggleSidebar()">
+          <button class="hamburger" type="button" onclick="toggleSidebar()">
             <span></span>
             <span></span>
             <span></span>
@@ -121,7 +116,7 @@ requireRole(["Admin"]);
 
           <div class="title">
             <h1>RPJ MANUFACTURER</h1>
-            <p>ERP Dashboard Template</p>
+            <p>Staff Management</p>
           </div>
         </div>
 
@@ -242,30 +237,30 @@ requireRole(["Admin"]);
           </div>
 
           <div class="sub-card" style="margin-top:16px;">
-  <h3>Attendance History</h3>
+            <h3>Attendance History</h3>
 
-  <div class="form-grid" style="margin-bottom:10px;">
-    <div class="input-box">
-      <label>Select Staff</label>
-      <select id="attendanceFilterName"></select>
-    </div>
+            <div class="form-grid" style="margin-bottom:10px;">
+              <div class="input-box">
+                <label>Select Staff</label>
+                <select id="attendanceFilterName"></select>
+              </div>
 
-    <div class="input-box">
-      <label>Select Month</label>
-      <input type="month" id="attendanceFilterMonth" />
-    </div>
-  </div>
+              <div class="input-box">
+                <label>Select Month</label>
+                <input type="month" id="attendanceFilterMonth" />
+              </div>
+            </div>
 
-  <div class="btn-row" style="margin-bottom:10px;">
-    <button class="primary-btn" onclick="filterAttendance()">Show</button>
-    <button class="secondary-btn" onclick="clearAttendanceFilter()">Clear</button>
-  </div>
+            <div class="btn-row" style="margin-bottom:10px;">
+              <button class="primary-btn" onclick="filterAttendance()">Show</button>
+              <button class="secondary-btn" onclick="clearAttendanceFilter()">Clear</button>
+            </div>
 
-  <div id="attendanceSummaryBox" style="margin-bottom:10px; display:none;">
-    <b id="attSumPresent">Present: 0</b> |
-    <b id="attSumAbsent">Absent: 0</b> |
-    <b id="attSumHalf">Half Day: 0</b>
-  </div>
+            <div id="attendanceSummaryBox" style="margin-bottom:10px; display:none;">
+              <b id="attSumPresent">Present: 0</b> |
+              <b id="attSumAbsent">Absent: 0</b> |
+              <b id="attSumHalf">Half Day: 0</b>
+            </div>
 
             <div class="form-grid">
               <div class="input-box">
@@ -861,12 +856,13 @@ requireRole(["Admin"]);
 
     function loadStaffDropdowns() {
       const filter = document.getElementById("attendanceFilterName");
-if (filter) {
-  filter.innerHTML = '<option value="">Select Staff</option>';
-  staffData.forEach(s => {
-    filter.innerHTML += `<option value="${s.name}">${s.name}</option>`;
-  });
-}
+      if (filter) {
+        filter.innerHTML = '<option value="">Select Staff</option>';
+        staffData.forEach(s => {
+          filter.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+        });
+      }
+
       const ids = ["workStaffName", "attendanceStaffName", "paymentStaffName", "summaryStaffName"];
 
       ids.forEach((id) => {
@@ -877,7 +873,6 @@ if (filter) {
 
         staffData.forEach((staff) => {
           select.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
-
         });
       });
     }
@@ -949,68 +944,69 @@ if (filter) {
       document.getElementById("sumAbsent").textContent = "Absent Days: " + absentDays;
       document.getElementById("sumHalfDay").textContent = "Half Days: " + halfDays;
     }
-function filterAttendance() {
-  const name = document.getElementById("attendanceFilterName").value;
-  const month = document.getElementById("attendanceFilterMonth").value;
 
-  if (!name) {
-    showToast("Staff select karo", "error");
-    return;
-  }
+    function filterAttendance() {
+      const name = document.getElementById("attendanceFilterName").value;
+      const month = document.getElementById("attendanceFilterMonth").value;
 
-  function isSameMonth(dateStr) {
-    if (!month) return true;
-    return String(dateStr || "").startsWith(month);
-  }
+      if (!name) {
+        showToast("Staff select karo", "error");
+        return;
+      }
 
-  const filtered = attendanceData.filter(item =>
-    String(item.name || "").trim() === name &&
-    isSameMonth(item.date)
-  );
+      function isSameMonth(dateStr) {
+        if (!month) return true;
+        return String(dateStr || "").startsWith(month);
+      }
 
-  const tbody = document.getElementById("attendanceTableBody");
-  tbody.innerHTML = "";
+      const filtered = attendanceData.filter(item =>
+        String(item.name || "").trim() === name &&
+        isSameMonth(item.date)
+      );
 
-  if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="5">No record found</td></tr>`;
-  } else {
-    filtered.forEach(item => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${item.name}</td>
-          <td>${item.date}</td>
-          <td>${item.status}</td>
-          <td>${item.inTime || ""}</td>
-          <td>${item.outTime || ""}</td>
-        </tr>
-      `;
-    });
-  }
+      const tbody = document.getElementById("attendanceTableBody");
+      tbody.innerHTML = "";
 
-  // SHOW TABLE
-  tbody.style.display = "";
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="5">No record found</td></tr>`;
+      } else {
+        filtered.forEach(item => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${item.name}</td>
+              <td>${item.date}</td>
+              <td>${item.status}</td>
+              <td>${item.inTime || ""}</td>
+              <td>${item.outTime || ""}</td>
+            </tr>
+          `;
+        });
+      }
 
-  // SUMMARY
-  const present = filtered.filter(i => i.status === "PRESENT").length;
-  const absent = filtered.filter(i => i.status === "ABSENT").length;
-  const half = filtered.filter(i => i.status === "HALF DAY").length;
+      tbody.style.display = "";
 
-  document.getElementById("attSumPresent").textContent = "Present: " + present;
-  document.getElementById("attSumAbsent").textContent = "Absent: " + absent;
-  document.getElementById("attSumHalf").textContent = "Half Day: " + half;
+      const present = filtered.filter(i => i.status === "PRESENT").length;
+      const absent = filtered.filter(i => i.status === "ABSENT").length;
+      const half = filtered.filter(i => i.status === "HALF DAY").length;
 
-  document.getElementById("attendanceSummaryBox").style.display = "block";
-}
-function clearAttendanceFilter() {
-  document.getElementById("attendanceFilterName").value = "";
-  document.getElementById("attendanceFilterMonth").value = "";
+      document.getElementById("attSumPresent").textContent = "Present: " + present;
+      document.getElementById("attSumAbsent").textContent = "Absent: " + absent;
+      document.getElementById("attSumHalf").textContent = "Half Day: " + half;
 
-  const tbody = document.getElementById("attendanceTableBody");
-  tbody.style.display = "none";
-  tbody.innerHTML = "";
+      document.getElementById("attendanceSummaryBox").style.display = "block";
+    }
 
-  document.getElementById("attendanceSummaryBox").style.display = "none";
-}
+    function clearAttendanceFilter() {
+      document.getElementById("attendanceFilterName").value = "";
+      document.getElementById("attendanceFilterMonth").value = "";
+
+      const tbody = document.getElementById("attendanceTableBody");
+      tbody.style.display = "none";
+      tbody.innerHTML = "";
+
+      document.getElementById("attendanceSummaryBox").style.display = "none";
+    }
+
     document.getElementById("summaryMonth")?.addEventListener("change", updateStaffSummary);
     document.getElementById("summaryStaffName")?.addEventListener("change", updateStaffSummary);
 
@@ -1033,12 +1029,11 @@ function clearAttendanceFilter() {
       updateStaffSummary();
     });
   </script>
+
   <script src="js/auth.js"></script>
-<script>
-requireLogin();
-</script>
-</body>
-</html>
+  <script>
+    requireRole(["Admin"]);
+  </script>
 </body>
 </html>
 
