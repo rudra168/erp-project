@@ -137,10 +137,6 @@
     }
   </style>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireRole(["Admin"]);
-</script>
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -156,7 +152,7 @@ requireRole(["Admin"]);
           </a>
         </div>
 
-        <ul class="menu"></ul>
+        <ul class="menu">
           <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
           <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
           <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
@@ -206,7 +202,7 @@ requireRole(["Admin"]);
           </div>
 
           <div class="info-box">
-            Settings save karne se pehle unlock karna zaroori hai.  
+            Settings save karne se pehle unlock karna zaroori hai.
             Abhi ye beginner version me <strong>step code verification</strong> se chalega.
           </div>
         </div>
@@ -278,9 +274,6 @@ requireRole(["Admin"]);
   <script>
     const ERP_SETTINGS_KEY = "erpBillingSettings";
     const ERP_UNLOCK_KEY = "erpSettingsUnlocked";
-
-    // Beginner version ka fixed step code
-    // Baad me isko backend OTP/email se replace karenge
     const OWNER_STEP_CODE = "RPJ2026";
 
     const defaultSettings = {
@@ -419,8 +412,6 @@ requireRole(["Admin"]);
       localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(settings));
       renderPreview();
       alert("Settings save ho gaya");
-
-      // save ke baad auto lock
       lockSettings();
     }
 
@@ -482,11 +473,10 @@ requireRole(["Admin"]);
       updateLockUI();
     });
   </script>
- <script src="js/auth.js"></script>
-<script>
-requireLogin();
-</script>
-</body>
-</html>>
+
+  <script src="js/auth.js"></script>
+  <script>
+    requireRole(["Admin"]);
+  </script>
 </body>
 </html>
