@@ -614,40 +614,37 @@
       }
     }
 
-    function loginUser() {
-      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-      const password = document.getElementById("loginPassword").value.trim();
+    async function loginUser() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
 
-      if (!email || !password) {
-        showStatus("loginStatus", "Email aur password daalo.", "error");
-        return;
-      }
+  if (!email || !password) {
+    alert("Email aur password daalo");
+    return;
+  }
 
-      const users = getUsers();
-      const user = users.find((u) => String(u.email).toLowerCase() === email);
+  try {
+    const res = await fetch("https://erp-backend-5ya9.onrender.com/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
 
-      if (!user) {
-        showStatus("loginStatus", "Ye user mila nahi.", "error");
-        return;
-      }
+    const data = await res.json();
 
-      if (user.password !== password) {
-        showStatus("loginStatus", "Password galat hai.", "error");
-        return;
-      }
-
-      if (String(user.status).toLowerCase() !== "approved") {
-        showStatus("loginStatus", "Account abhi pending approval me hai. Admin approve karega tab login hoga.", "info");
-        return;
-      }
-
-      localStorage.setItem("erpLoggedInUser", JSON.stringify(user));
-      showStatus("loginStatus", `Login successful. Welcome ${user.name} (${user.role}).`, "success");
-
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1200);
+    if (data.success) {
+      localStorage.setItem("erpLoggedInUser", JSON.stringify(data.user));
+      window.location.href = "dashboard.html";
+    } else {
+      alert(data.message || "Login failed");
     }
+  } catch (error) {
+    console.log(error);
+    alert("Server connection error");
+  }
+}
 
     function registerUser() {
       const name = document.getElementById("regName").value.trim();
