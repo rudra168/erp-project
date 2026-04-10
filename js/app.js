@@ -1,4 +1,4 @@
-const API_BASE = "https://erp-backend-5ya9.onrender.com";
+const API_BASE = "https://erp-project-production-ba38.up.railway.app";
 let lotData = JSON.parse(localStorage.getItem("lotData")) || [];
 let stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
 let invoiceItems = JSON.parse(localStorage.getItem("invoiceItems")) || [];
