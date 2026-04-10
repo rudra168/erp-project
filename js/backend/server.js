@@ -4,7 +4,7 @@ const mysql = require("mysql2/promise");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 const allowedOrigins = [
   "http://localhost:5000",
@@ -14,37 +14,33 @@ const allowedOrigins = [
   "https://erp-project-eight.vercel.app"
 ];
 
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS not allowed for this origin"));
     }
-    return callback(new Error("CORS not allowed for this origin"));
-  }
-}));
+  })
+);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "..")));
 
-// =========================
-// DATABASE POOL
-// =========================
-const dbConfig = process.env.DATABASE_URL
-  ? { uri: process.env.DATABASE_URL }
-  : {
-      host: process.env.MYSQLHOST,
-      user: process.env.MYSQLUSER,
-      password: process.env.MYSQLPASSWORD,
-      database: process.env.MYSQLDATABASE,
-      port: Number(process.env.MYSQLPORT || 3306),
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    };
-const db = mysql.createPool(dbConfig);
-const pool = dbConfig.uri
-  ? mysql.createPool(dbConfig.uri)
-  : mysql.createPool(dbConfig);
+/* =========================
+   DATABASE POOL
+========================= */
+const pool = mysql.createPool({
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: Number(process.env.MYSQLPORT || 3306),
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
 function format3(value) {
   const n = Number(value || 0);
@@ -54,6 +50,10 @@ function format3(value) {
 /* =========================
    TEST
 ========================= */
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "ERP backend running" });
+});
+
 app.get("/api/test", (req, res) => {
   res.json({ success: true, message: "Server working" });
 });
@@ -575,6 +575,24 @@ app.get("/getSalesHistory", async (req, res) => {
   }
 });
 
+/* front-end compatibility */
+app.get("/sales-history", async (req, res) => {
+  try {
+    const [sales] = await pool.query(`
+      SELECT 
+        sh.*,
+        (SELECT COUNT(*) FROM sales_items si WHERE si.sale_id = sh.id) AS total_items
+      FROM sales_history sh
+      ORDER BY sh.id DESC
+    `);
+
+    res.json(sales);
+  } catch (error) {
+    console.error("Sales history error:", error);
+    res.status(500).json([]);
+  }
+});
+
 /* =========================
    INVOICE ITEMS
 ========================= */
@@ -625,13 +643,13 @@ app.put("/returnItem/:barcode", async (req, res) => {
 });
 
 /* =========================
-   DEFAULT
+   LOGIN
 ========================= */
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const [rows] = await db.query(
+    const [rows] = await pool.query(
       "SELECT * FROM users WHERE email = ? AND password = ?",
       [email, password]
     );
@@ -642,28 +660,27 @@ app.post("/login", async (req, res) => {
 
     const user = rows[0];
 
-    if (user.status !== "approved") {
+    if (String(user.status || "").toLowerCase() !== "approved") {
       return res.json({ success: false, message: "Pending approval" });
     }
 
     res.json({ success: true, user });
-
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-app.get("/", (req, res) => {
-  res.json({ success: true, message: "ERP backend running" });
-});
 
+/* =========================
+   START SERVER
+========================= */
 app.listen(PORT, async () => {
   try {
     const conn = await pool.getConnection();
-    console.log("MySQL Connected");
+    console.log("MySQL Connected ✅");
     conn.release();
   } catch (error) {
-    console.error("MySQL connection failed:", error.message);
+    console.error("MySQL connection failed:", error);
   }
 
   console.log(`Server running on port ${PORT}`);
