@@ -714,7 +714,9 @@ app.use((err, req, res, next) => {
 /* =========================
    START SERVER
 ========================= */
-app.listen(PORT, "0.0.0.0", async () => {
+app.listen(process.env.PORT || 8080, async () => {
+  console.log("Server running...");
+
   try {
     const conn = await pool.getConnection();
     console.log("MySQL Connected ✅");
@@ -723,5 +725,5 @@ app.listen(PORT, "0.0.0.0", async () => {
     console.error("MySQL connection failed:", error);
   }
 
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${process.env.PORT || 8080}`);
 });
