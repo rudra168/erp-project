@@ -3,7 +3,7 @@ const cors = require("cors");
 const mysql = require("mysql2/promise");
 
 const app = express();
-const PORT = Number(process.env.PORT || 8080);
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -43,23 +43,19 @@ async function testDbConnection() {
    BASIC ROUTES
 ========================= */
 app.get("/", (req, res) => {
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     message: "ERP backend running"
   });
 });
 
 app.get("/api/test", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Server working"
-  });
+  return res.status(200).send("API TEST OK");
 });
 
 app.get("/health", async (req, res) => {
   try {
     await testDbConnection();
-
     return res.status(200).json({
       success: true,
       app: "ok",
@@ -114,7 +110,7 @@ app.get("/api/dashboard", async (req, res) => {
       LIMIT 5
     `);
 
-    res.json({
+    return res.json({
       success: true,
       totalStock: Number(stockSummary[0]?.total_items || 0),
       totalWeight: Number(stockSummary[0]?.total_weight || 0),
@@ -126,7 +122,7 @@ app.get("/api/dashboard", async (req, res) => {
     });
   } catch (error) {
     console.error("Dashboard error:", error);
-    res.status(500).json({ success: false, message: "Dashboard fetch failed" });
+    return res.status(500).json({ success: false, message: "Dashboard fetch failed" });
   }
 });
 
@@ -144,10 +140,10 @@ app.get("/getStock", async (req, res) => {
         id ASC
     `);
 
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
     console.error("Get stock error:", error);
-    res.status(500).json({ success: false, message: "Stock fetch failed" });
+    return res.status(500).json({ success: false, message: "Stock fetch failed" });
   }
 });
 
@@ -170,13 +166,13 @@ app.get("/getSticker/:barcode", async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       item: rows[0]
     });
   } catch (error) {
     console.error("Get sticker error:", error);
-    res.status(500).json({ success: false, message: "Fetch failed" });
+    return res.status(500).json({ success: false, message: "Fetch failed" });
   }
 });
 
@@ -278,13 +274,13 @@ app.post("/addSticker", async (req, res) => {
       ]
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Sticker added successfully"
     });
   } catch (err) {
     console.error("Add sticker error:", err);
-    res.status(500).json({ success: false, message: "Add sticker failed" });
+    return res.status(500).json({ success: false, message: "Add sticker failed" });
   }
 });
 
@@ -411,13 +407,13 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       ]
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Sticker updated successfully"
     });
   } catch (error) {
     console.error("Update sticker error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
@@ -430,13 +426,13 @@ app.delete("/deleteSticker/:barcode", async (req, res) => {
 
     await pool.query(`DELETE FROM stock WHERE barcode = ?`, [barcode]);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Sticker deleted successfully"
     });
   } catch (error) {
     console.error("Delete sticker error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
@@ -452,10 +448,10 @@ app.put("/restoreSticker/:barcode", async (req, res) => {
       [barcode]
     );
 
-    res.json({ success: true, message: "Sticker restored" });
+    return res.json({ success: true, message: "Sticker restored" });
   } catch (err) {
     console.error("Restore error:", err);
-    res.status(500).json({ success: false, message: "Restore failed" });
+    return res.status(500).json({ success: false, message: "Restore failed" });
   }
 });
 
@@ -558,7 +554,7 @@ app.post("/saveInvoice", async (req, res) => {
 
     await connection.commit();
 
-    res.json({
+    return res.json({
       success: true,
       message: "Invoice saved successfully"
     });
@@ -569,7 +565,7 @@ app.post("/saveInvoice", async (req, res) => {
       } catch (_) {}
     }
     console.error("Save invoice error:", error);
-    res.status(500).json({ success: false, message: "Invoice save failed" });
+    return res.status(500).json({ success: false, message: "Invoice save failed" });
   } finally {
     if (connection) connection.release();
   }
@@ -588,13 +584,13 @@ app.get("/getSalesHistory", async (req, res) => {
       ORDER BY sh.id DESC
     `);
 
-    res.json({
+    return res.json({
       success: true,
       sales
     });
   } catch (error) {
     console.error("Sales history error:", error);
-    res.status(500).json({ success: false, message: "Sales history fetch failed" });
+    return res.status(500).json({ success: false, message: "Sales history fetch failed" });
   }
 });
 
@@ -608,10 +604,10 @@ app.get("/sales-history", async (req, res) => {
       ORDER BY sh.id DESC
     `);
 
-    res.json(sales);
+    return res.json(sales);
   } catch (error) {
     console.error("Sales history error:", error);
-    res.status(500).json([]);
+    return res.status(500).json([]);
   }
 });
 
@@ -632,13 +628,13 @@ app.get("/getInvoiceItems/:invoiceNumber", async (req, res) => {
       [invoiceNumber]
     );
 
-    res.json({
+    return res.json({
       success: true,
       items
     });
   } catch (error) {
     console.error("Invoice items error:", error);
-    res.status(500).json({ success: false, message: "Invoice items fetch failed" });
+    return res.status(500).json({ success: false, message: "Invoice items fetch failed" });
   }
 });
 
@@ -654,13 +650,13 @@ app.put("/returnItem/:barcode", async (req, res) => {
       [barcode]
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Item returned successfully"
     });
   } catch (error) {
     console.error("Return item error:", error);
-    res.status(500).json({ success: false, message: "Return failed" });
+    return res.status(500).json({ success: false, message: "Return failed" });
   }
 });
 
@@ -686,10 +682,10 @@ app.post("/login", async (req, res) => {
       return res.json({ success: false, message: "Pending approval" });
     }
 
-    res.json({ success: true, user });
+    return res.json({ success: true, user });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
@@ -697,7 +693,7 @@ app.post("/login", async (req, res) => {
    404
 ========================= */
 app.use((req, res) => {
-  res.status(404).json({
+  return res.status(404).json({
     success: false,
     message: "Route not found"
   });
@@ -708,7 +704,7 @@ app.use((req, res) => {
 ========================= */
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
-  res.status(500).json({
+  return res.status(500).json({
     success: false,
     message: "Internal server error",
     error: err.message
@@ -718,18 +714,9 @@ app.use((err, req, res, next) => {
 /* =========================
    START SERVER
 ========================= */
-async function startServer() {
-  try {
-    await testDbConnection();
-    console.log("MySQL Connected ✅");
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error("Startup failed:", error);
-    process.exit(1);
-  }
-}
-
-startServer();
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+  testDbConnection()
+    .then(() => console.log("MySQL Connected ✅"))
+    .catch((error) => console.error("MySQL connection failed:", error));
+});
