@@ -287,10 +287,6 @@
     }
   </style>
 </head>
-<script src="js/auth.js"></script>
-<script>
-requireRole(["Admin"]);
-</script>
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -300,7 +296,7 @@ requireRole(["Admin"]);
           <p>Admin Approval</p>
         </div>
 
-        <ul class="menu" id="sidebarMenu"></ul>
+        <ul class="menu" id="sidebarMenu">
           <li><a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
           <li><a href="admin-approval.html" class="active"><i class="fas fa-user-check"></i> Admin Approval</a></li>
           <li><a href="staff-management.html"><i class="fas fa-users"></i> Staff Management</a></li>
@@ -363,7 +359,7 @@ requireRole(["Admin"]);
           </div>
 
           <div class="small-note">
-            Note: Abhi ye panel current pending requests ko handle kar raha hai. Next step me isko real backend approval API se connect karenge.
+            New user register karega to yahin pending me dikhega. Approve ke baad hi login allow hoga.
           </div>
         </div>
 
@@ -399,22 +395,27 @@ requireRole(["Admin"]);
       window.location.href = "login.html";
     }
 
-    function getPendingUsers() {
-      const data = JSON.parse(localStorage.getItem("erpPendingUsers")) || [];
-      return Array.isArray(data) ? data : [];
+    function getAllUsers() {
+      const list = JSON.parse(localStorage.getItem("erpUsers")) || [];
+      return Array.isArray(list) ? list : [];
+    }
+
+    function saveAllUsers(list) {
+      localStorage.setItem("erpUsers", JSON.stringify(list));
     }
 
     function getApprovedUsers() {
-      const data = JSON.parse(localStorage.getItem("erpApprovedUsers")) || [];
-      return Array.isArray(data) ? data : [];
-    }
-
-    function savePendingUsers(list) {
-      localStorage.setItem("erpPendingUsers", JSON.stringify(list));
+      const list = JSON.parse(localStorage.getItem("erpApprovedUsers")) || [];
+      return Array.isArray(list) ? list : [];
     }
 
     function saveApprovedUsers(list) {
       localStorage.setItem("erpApprovedUsers", JSON.stringify(list));
+    }
+
+    function getPendingUsers() {
+      const allUsers = getAllUsers();
+      return allUsers.filter(user => String(user.status || "").toLowerCase() === "pending");
     }
 
     function getSearchText() {
@@ -456,7 +457,7 @@ requireRole(["Admin"]);
                 <div class="mini-avatar">${initials}</div>
                 <div class="user-meta">
                   <strong>${user.name || "-"}</strong>
-                  <span>Requested: ${user.createdAt || "-"}</span>
+                  <span>Requested: ${user.createdAt || user.created_at || "-"}</span>
                 </div>
               </div>
             </td>
@@ -471,6 +472,7 @@ requireRole(["Admin"]);
                 <option value="Invoice">Invoice</option>
                 <option value="Stock">Stock</option>
                 <option value="Sticker">Sticker</option>
+                <option value="Process">Process</option>
               </select>
             </td>
             <td>
@@ -491,42 +493,40 @@ requireRole(["Admin"]);
     }
 
     function approveUser(userId) {
-      let pendingUsers = getPendingUsers();
+      let allUsers = getAllUsers();
       let approvedUsers = getApprovedUsers();
 
-      const user = pendingUsers.find((item) => String(item.id) === String(userId));
-      if (!user) return;
+      const index = allUsers.findIndex((item) => String(item.id) === String(userId));
+      if (index === -1) return;
 
+      const user = allUsers[index];
       const role = document.getElementById(`role-${userId}`)?.value || "";
+
       if (!role) {
         alert("Pehle role select karo");
         return;
       }
 
-      const alreadyApproved = approvedUsers.some(
-        (item) => String(item.email || "").toLowerCase() === String(user.email || "").toLowerCase()
-      );
-
-      const approvedUser = {
+      const updatedUser = {
         ...user,
         role,
         status: "approved",
         approvedAt: new Date().toLocaleString()
       };
 
-      if (!alreadyApproved) {
-        approvedUsers.unshift(approvedUser);
+      allUsers[index] = updatedUser;
+
+      const approvedIndex = approvedUsers.findIndex(
+        (item) => String(item.email || "").toLowerCase() === String(user.email || "").toLowerCase()
+      );
+
+      if (approvedIndex >= 0) {
+        approvedUsers[approvedIndex] = updatedUser;
       } else {
-        approvedUsers = approvedUsers.map((item) =>
-          String(item.email || "").toLowerCase() === String(user.email || "").toLowerCase()
-            ? approvedUser
-            : item
-        );
+        approvedUsers.unshift(updatedUser);
       }
 
-      pendingUsers = pendingUsers.filter((item) => String(item.id) !== String(userId));
-
-      savePendingUsers(pendingUsers);
+      saveAllUsers(allUsers);
       saveApprovedUsers(approvedUsers);
 
       alert(`${user.name} approved as ${role}`);
@@ -534,15 +534,21 @@ requireRole(["Admin"]);
     }
 
     function rejectUser(userId) {
-      let pendingUsers = getPendingUsers();
-      const user = pendingUsers.find((item) => String(item.id) === String(userId));
-      if (!user) return;
+      let allUsers = getAllUsers();
+      const index = allUsers.findIndex((item) => String(item.id) === String(userId));
+      if (index === -1) return;
 
+      const user = allUsers[index];
       const ok = confirm(`Reject ${user.name}?`);
       if (!ok) return;
 
-      pendingUsers = pendingUsers.filter((item) => String(item.id) !== String(userId));
-      savePendingUsers(pendingUsers);
+      allUsers[index] = {
+        ...user,
+        status: "rejected",
+        rejectedAt: new Date().toLocaleString()
+      };
+
+      saveAllUsers(allUsers);
 
       alert(`${user.name} rejected`);
       loadApprovalData();
@@ -603,64 +609,10 @@ requireRole(["Admin"]);
       loadApprovalData();
     });
   </script>
+
+  <script src="js/auth.js"></script>
   <script>
-function setupSidebarByRole() {
-  const user = JSON.parse(localStorage.getItem("erpLoggedInUser"));
-
-  if (!user) return;
-
-  const role = user.role;
-  const menu = document.getElementById("sidebarMenu");
-
-  if (!menu) return;
-
-  // Sab menu items
-  const items = menu.querySelectorAll("li");
-
-  items.forEach(item => {
-    const text = item.innerText.toLowerCase();
-
-    // Admin sab dekh sakta hai
-    if (role === "Admin") return;
-
-    // Billing role
-    if (role === "Billing") {
-      if (
-        text.includes("billing") ||
-        text.includes("invoice") ||
-        text.includes("dashboard") ||
-        text.includes("sales")
-      ) return;
-      item.style.display = "none";
-    }
-
-    // Stock role
-    else if (role === "Stock") {
-      if (
-        text.includes("stock") ||
-        text.includes("dashboard")
-      ) return;
-      item.style.display = "none";
-    }
-
-    // Sticker role
-    else if (role === "Sticker") {
-      if (
-        text.includes("sticker") ||
-        text.includes("dashboard")
-      ) return;
-      item.style.display = "none";
-    }
-
-    // Default: hide sab
-    else {
-      item.style.display = "none";
-    }
-  });
-}
-
-// Page load pe run karo
-window.addEventListener("load", setupSidebarByRole);
-</script>
+    requireRole(["Admin"]);
+  </script>
 </body>
 </html>

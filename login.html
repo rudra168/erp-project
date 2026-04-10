@@ -411,7 +411,7 @@
               <span>Remember me</span>
             </label>
 
-            <a class="mini-link" onclick="switchAuthTab('forgot')">Bhul gaye?</a>
+            <a class="mini-link" onclick="switchAuthTab('forgot')">Forgot?</a>
           </div>
 
           <div class="action-stack">
@@ -518,7 +518,7 @@
         </div>
 
         <div class="auth-footer">
-          jewellry management ERP - 2026
+          jewellery management ERP - 2026
         </div>
       </div>
     </div>
@@ -572,37 +572,72 @@
       }
     }
 
-    async function loginUser() {
-      const email = document.getElementById("loginEmail").value.trim();
+    function getPendingUsers() {
+      return JSON.parse(localStorage.getItem("erpPendingUsers")) || [];
+    }
+
+    function savePendingUsers(users) {
+      localStorage.setItem("erpPendingUsers", JSON.stringify(users));
+    }
+
+    function getApprovedUsers() {
+      return JSON.parse(localStorage.getItem("erpApprovedUsers")) || [];
+    }
+
+    function saveApprovedUsers(users) {
+      localStorage.setItem("erpApprovedUsers", JSON.stringify(users));
+    }
+
+    function ensureDefaultAdmin() {
+      const approvedUsers = getApprovedUsers();
+      const hasAdmin = approvedUsers.some(
+        (u) => String(u.email || "").toLowerCase() === "admin@erp.com"
+      );
+
+      if (!hasAdmin) {
+        approvedUsers.push({
+          id: "USR-ADMIN-1",
+          name: "Main Admin",
+          mobile: "9999999999",
+          email: "admin@erp.com",
+          password: "1234",
+          role: "Admin",
+          status: "approved",
+          approvedAt: new Date().toLocaleString()
+        });
+        saveApprovedUsers(approvedUsers);
+      }
+    }
+
+    function loginUser() {
+      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
       const password = document.getElementById("loginPassword").value.trim();
 
       if (!email || !password) {
-        alert("Email aur password daalo");
+        showStatus("loginStatus", "Email aur password daalo.", "error");
         return;
       }
 
-      try {
-        const res = await fetch("https://erp-backend-5ya9.onrender.com/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, password })
-        });
+      const approvedUsers = getApprovedUsers();
 
-        const data = await res.json();
+      const user = approvedUsers.find(
+        (u) =>
+          String(u.email || "").toLowerCase() === email &&
+          String(u.password || "") === password &&
+          String(u.status || "").toLowerCase() === "approved"
+      );
 
-        if (data.success) {
-          localStorage.setItem("erpLoggedInUser", JSON.stringify(data.user));
-          alert("Login success ✅");
-          window.location.href = "dashboard.html";
-        } else {
-          alert(data.message || "Login failed ❌");
-        }
-      } catch (error) {
-        console.error("Login error:", error);
-        alert("Server connection error ❌");
+      if (!user) {
+        showStatus("loginStatus", "Account approved nahi hai ya login details galat hai.", "error");
+        return;
       }
+
+      localStorage.setItem("erpLoggedInUser", JSON.stringify(user));
+      showStatus("loginStatus", "Login success ✅ Redirect ho raha hai...", "success");
+
+      setTimeout(() => {
+        window.location.href = "dashboard.html";
+      }, 700);
     }
 
     function registerUser() {
@@ -627,11 +662,19 @@
         return;
       }
 
-      const pendingUsers = JSON.parse(localStorage.getItem("erpPendingUsers")) || [];
-      const exists = pendingUsers.some((u) => String(u.email).toLowerCase() === email);
+      let pendingUsers = getPendingUsers();
+      const approvedUsers = getApprovedUsers();
 
-      if (exists) {
-        showStatus("registerStatus", "Ye email pehle se pending list me hai.", "error");
+      const pendingExists = pendingUsers.some(
+        (u) => String(u.email || "").toLowerCase() === email
+      );
+
+      const approvedExists = approvedUsers.some(
+        (u) => String(u.email || "").toLowerCase() === email
+      );
+
+      if (pendingExists || approvedExists) {
+        showStatus("registerStatus", "Ye email pehle se registered hai.", "error");
         return;
       }
 
@@ -646,11 +689,11 @@
         createdAt: new Date().toLocaleString()
       });
 
-      localStorage.setItem("erpPendingUsers", JSON.stringify(pendingUsers));
+      savePendingUsers(pendingUsers);
 
       showStatus(
         "registerStatus",
-        "Account request submit ho gaya. Admin approve karke role assign karega, tabhi login hoga.",
+        "Account request submit ho gaya. Admin approve karega tabhi login hoga.",
         "success"
       );
 
@@ -669,12 +712,28 @@
         return;
       }
 
+      const pendingUsers = getPendingUsers();
+      const approvedUsers = getApprovedUsers();
+
+      const exists =
+        pendingUsers.some((u) => String(u.email || "").toLowerCase() === email) ||
+        approvedUsers.some((u) => String(u.email || "").toLowerCase() === email);
+
+      if (!exists) {
+        showStatus("forgotStatus", "Is email se koi account nahi mila.", "error");
+        return;
+      }
+
       showStatus(
         "forgotStatus",
         "Reset password backend ke saath next step me connect hoga.",
         "info"
       );
     }
+
+    window.addEventListener("load", function () {
+      ensureDefaultAdmin();
+    });
   </script>
 </body>
 </html>
