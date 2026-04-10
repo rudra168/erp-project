@@ -33,6 +33,12 @@ function format3(value) {
   return isNaN(n) ? "0.000" : n.toFixed(3);
 }
 
+async function testDbConnection() {
+  const conn = await pool.getConnection();
+  await conn.ping();
+  conn.release();
+}
+
 /* =========================
    BASIC ROUTES
 ========================= */
@@ -52,9 +58,7 @@ app.get("/api/test", (req, res) => {
 
 app.get("/health", async (req, res) => {
   try {
-    const conn = await pool.getConnection();
-    await conn.ping();
-    conn.release();
+    await testDbConnection();
 
     return res.status(200).json({
       success: true,
@@ -714,16 +718,18 @@ app.use((err, req, res, next) => {
 /* =========================
    START SERVER
 ========================= */
-app.listen(process.env.PORT || 8080, async () => {
-  console.log("Server running...");
-
+async function startServer() {
   try {
-    const conn = await pool.getConnection();
+    await testDbConnection();
     console.log("MySQL Connected ✅");
-    conn.release();
-  } catch (error) {
-    console.error("MySQL connection failed:", error);
-  }
 
-  console.log(`Server running on port ${process.env.PORT || 8080}`);
-});
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Startup failed:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
