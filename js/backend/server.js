@@ -2,9 +2,11 @@ const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT || 8080);
+const ROOT_DIR = path.join(__dirname, "..", "..");
 
 const allowedOrigins = [
   "http://localhost:5000",
@@ -14,19 +16,38 @@ const allowedOrigins = [
   "https://erp-project-eight.vercel.app"
 ];
 
+/* =========================
+   GLOBAL PROCESS LOGS
+========================= */
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
+});
+
+/* =========================
+   MIDDLEWARE
+========================= */
 app.use(
   cors({
     origin(origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("CORS not allowed for this origin"));
+      return callback(null, true);
     }
   })
 );
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "..")));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  console.log(`REQ: ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 /* =========================
    DATABASE POOL
@@ -48,14 +69,42 @@ function format3(value) {
 }
 
 /* =========================
-   TEST
+   BASIC ROUTES
 ========================= */
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "ERP backend running" });
+  res.status(200).json({
+    success: true,
+    message: "ERP backend running"
+  });
 });
 
 app.get("/api/test", (req, res) => {
-  res.json({ success: true, message: "Server working" });
+  res.status(200).json({
+    success: true,
+    message: "Server working"
+  });
+});
+
+app.get("/health", async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    await conn.ping();
+    conn.release();
+
+    return res.status(200).json({
+      success: true,
+      app: "ok",
+      db: "ok"
+    });
+  } catch (error) {
+    console.error("Health check error:", error);
+    return res.status(500).json({
+      success: false,
+      app: "ok",
+      db: "failed",
+      error: error.message
+    });
+  }
 });
 
 /* =========================
@@ -445,9 +494,10 @@ app.put("/restoreSticker/:barcode", async (req, res) => {
    SAVE INVOICE
 ========================= */
 app.post("/saveInvoice", async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection;
 
   try {
+    connection = await pool.getConnection();
     await connection.beginTransaction();
 
     const {
@@ -544,11 +594,15 @@ app.post("/saveInvoice", async (req, res) => {
       message: "Invoice saved successfully"
     });
   } catch (error) {
-    await connection.rollback();
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (_) {}
+    }
     console.error("Save invoice error:", error);
     res.status(500).json({ success: false, message: "Invoice save failed" });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 });
 
@@ -575,7 +629,6 @@ app.get("/getSalesHistory", async (req, res) => {
   }
 });
 
-/* front-end compatibility */
 app.get("/sales-history", async (req, res) => {
   try {
     const [sales] = await pool.query(`
@@ -672,9 +725,46 @@ app.post("/login", async (req, res) => {
 });
 
 /* =========================
+   STATIC FILES (KEEP AT END)
+========================= */
+if (fs.existsSync(ROOT_DIR)) {
+  app.use(express.static(ROOT_DIR));
+
+  app.get("/:file", (req, res, next) => {
+    const requestedFile = path.join(ROOT_DIR, req.params.file);
+    if (fs.existsSync(requestedFile) && fs.statSync(requestedFile).isFile()) {
+      return res.sendFile(requestedFile);
+    }
+    return next();
+  });
+}
+
+/* =========================
+   404
+========================= */
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    error: err.message
+  });
+});
+
+/* =========================
    START SERVER
 ========================= */
-app.listen(PORT, async () => {
+app.listen(PORT, "0.0.0.0", async () => {
   try {
     const conn = await pool.getConnection();
     console.log("MySQL Connected ✅");
