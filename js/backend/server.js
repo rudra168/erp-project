@@ -1,57 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
-const path = require("path");
-const fs = require("fs");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
-const ROOT_DIR = path.join(__dirname, "..", "..");
 
-const allowedOrigins = [
-  "http://localhost:5000",
-  "http://127.0.0.1:5000",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "https://erp-project-eight.vercel.app"
-];
-
-/* =========================
-   GLOBAL PROCESS LOGS
-========================= */
-process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION:", err);
-});
-
-process.on("unhandledRejection", (reason) => {
-  console.error("UNHANDLED REJECTION:", reason);
-});
-
-/* =========================
-   MIDDLEWARE
-========================= */
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(null, true);
-    }
-  })
-);
-
+app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  console.log(`REQ: ${req.method} ${req.originalUrl}`);
-  next();
-});
-
-/* =========================
-   DATABASE POOL
-========================= */
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
@@ -61,6 +18,14 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
 });
 
 function format3(value) {
@@ -723,21 +688,6 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
-/* =========================
-   STATIC FILES (KEEP AT END)
-========================= */
-if (fs.existsSync(ROOT_DIR)) {
-  app.use(express.static(ROOT_DIR));
-
-  app.get("/:file", (req, res, next) => {
-    const requestedFile = path.join(ROOT_DIR, req.params.file);
-    if (fs.existsSync(requestedFile) && fs.statSync(requestedFile).isFile()) {
-      return res.sendFile(requestedFile);
-    }
-    return next();
-  });
-}
 
 /* =========================
    404
