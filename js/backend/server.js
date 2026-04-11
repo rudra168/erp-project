@@ -670,6 +670,187 @@ app.put("/returnItem/:barcode", async (req, res) => {
 });
 
 /* =========================
+   REGISTER USER
+========================= */
+app.post("/registerUser", async (req, res) => {
+  try {
+    const {
+      name = "",
+      mobile = "",
+      email = "",
+      password = ""
+    } = req.body;
+
+    const cleanName = String(name).trim();
+    const cleanMobile = String(mobile).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password).trim();
+
+    if (!cleanName || !cleanMobile || !cleanEmail || !cleanPassword) {
+      return res.json({
+        success: false,
+        message: "Name, mobile, email aur password required hai"
+      });
+    }
+
+    const [existingUsers] = await pool.query(
+      `SELECT id FROM users WHERE email = ? LIMIT 1`,
+      [cleanEmail]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.json({
+        success: false,
+        message: "Ye email pehle se registered hai"
+      });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO users (name, mobile, email, password, role, status)
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [cleanName, cleanMobile, cleanEmail, cleanPassword, "", "pending"]
+    );
+
+    return res.json({
+      success: true,
+      message: "Request admin approval ke liye chali gayi"
+    });
+  } catch (error) {
+    console.error("Register user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Register failed"
+    });
+  }
+});
+
+/* =========================
+   GET PENDING USERS
+========================= */
+app.get("/pendingUsers", async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, mobile, email, role, status, created_at
+      FROM users
+      WHERE status = 'pending'
+      ORDER BY id DESC
+      `
+    );
+
+    return res.json({
+      success: true,
+      users: rows
+    });
+  } catch (error) {
+    console.error("Pending users error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Pending users fetch failed"
+    });
+  }
+});
+
+/* =========================
+   APPROVE USER
+========================= */
+app.put("/approveUser/:id", async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const role = String(req.body.role || "").trim();
+
+    if (!userId || !role) {
+      return res.json({
+        success: false,
+        message: "User id aur role required hai"
+      });
+    }
+
+    const [checkUser] = await pool.query(
+      `SELECT id FROM users WHERE id = ? LIMIT 1`,
+      [userId]
+    );
+
+    if (!checkUser.length) {
+      return res.json({
+        success: false,
+        message: "User nahi mila"
+      });
+    }
+
+    await pool.query(
+      `
+      UPDATE users
+      SET role = ?, status = 'approved'
+      WHERE id = ?
+      `,
+      [role, userId]
+    );
+
+    return res.json({
+      success: true,
+      message: "User approved successfully"
+    });
+  } catch (error) {
+    console.error("Approve user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Approve failed"
+    });
+  }
+});
+
+/* =========================
+   REJECT USER
+========================= */
+app.put("/rejectUser/:id", async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+
+    if (!userId) {
+      return res.json({
+        success: false,
+        message: "User id required hai"
+      });
+    }
+
+    const [checkUser] = await pool.query(
+      `SELECT id FROM users WHERE id = ? LIMIT 1`,
+      [userId]
+    );
+
+    if (!checkUser.length) {
+      return res.json({
+        success: false,
+        message: "User nahi mila"
+      });
+    }
+
+    await pool.query(
+      `
+      UPDATE users
+      SET status = 'rejected'
+      WHERE id = ?
+      `,
+      [userId]
+    );
+
+    return res.json({
+      success: true,
+      message: "User rejected successfully"
+    });
+  } catch (error) {
+    console.error("Reject user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Reject failed"
+    });
+  }
+});
+
+/* =========================
    LOGIN
 ========================= */
 app.post("/login", async (req, res) => {
