@@ -39,6 +39,12 @@
       font-weight: 700;
       cursor: pointer;
       color: #fff;
+      transition: 0.2s ease;
+    }
+
+    .approval-btn:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
     }
 
     .approve-btn {
@@ -91,6 +97,12 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .created-at-cell {
+      min-width: 170px;
+      font-size: 13px;
+      color: #475569;
     }
   </style>
 </head>
@@ -177,6 +189,20 @@
       if (sidebar) sidebar.classList.toggle("collapsed");
     }
 
+    function formatDateTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (isNaN(date.getTime())) return value;
+
+      return date.toLocaleString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
     async function loadPendingUsers() {
       const tbody = document.getElementById("pendingUsersBody");
       if (!tbody) return;
@@ -213,7 +239,7 @@
                   <option value="Billing">Billing</option>
                 </select>
               </td>
-              <td>${user.created_at || ""}</td>
+              <td class="created-at-cell">${formatDateTime(user.created_at)}</td>
               <td>
                 <div class="action-row">
                   <button class="approval-btn approve-btn" onclick="approveUser(${user.id})">Approve</button>
