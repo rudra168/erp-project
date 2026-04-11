@@ -373,7 +373,7 @@
       <div class="auth-body">
         <div class="auth-tabs">
           <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
-          <button class="auth-tab" onclick="switchAuthTab('register')">Create New User</button>
+          <button class="auth-tab" onclick="switchAuthTab('register')">Company Signup</button>
           <button class="auth-tab" onclick="switchAuthTab('forgot')">Forgot Password</button>
         </div>
 
@@ -383,7 +383,7 @@
 
           <div class="auth-note">
             <i class="fas fa-lock"></i>
-            <span>Approved account hi login kar payega. Pending user ko admin approval chahiye.</span>
+            <span>Approved company admin ya approved user hi login kar payega.</span>
           </div>
 
           <div class="form-grid">
@@ -423,37 +423,37 @@
           <div id="loginStatus" class="status-box"></div>
         </div>
 
-        <!-- REGISTER -->
+        <!-- REGISTER / COMPANY SIGNUP -->
         <div id="registerPanel" class="auth-panel">
-          <div class="auth-title">Create New User</div>
+          <div class="auth-title">Request New Company Setup</div>
 
           <div class="auth-note">
-            <i class="fas fa-user-shield"></i>
-            <span>New user register karega, lekin admin approval ke baad hi login hoga.</span>
+            <i class="fas fa-building"></i>
+            <span>Company request submit hogi. Admin approve karega tabhi company aur admin account automatic create hoga.</span>
           </div>
 
           <div class="form-grid">
+            <div class="input-box full">
+              <label>Company Name</label>
+              <div class="input-wrap">
+                <i class="fas fa-building left-icon"></i>
+                <input type="text" id="regCompanyName" class="no-right" placeholder="Enter company name" />
+              </div>
+            </div>
+
             <div class="input-box">
-              <label>Full Name</label>
+              <label>Owner Name</label>
               <div class="input-wrap">
                 <i class="fas fa-user left-icon"></i>
-                <input type="text" id="regName" class="no-right" placeholder="Enter full name" />
+                <input type="text" id="regName" class="no-right" placeholder="Enter owner name" />
               </div>
             </div>
 
             <div class="input-box">
-              <label>Mobile</label>
-              <div class="input-wrap">
-                <i class="fas fa-phone left-icon"></i>
-                <input type="text" id="regMobile" class="no-right" placeholder="Enter mobile number" />
-              </div>
-            </div>
-
-            <div class="input-box full">
-              <label>Email</label>
+              <label>Owner Email</label>
               <div class="input-wrap">
                 <i class="fas fa-envelope left-icon"></i>
-                <input type="email" id="regEmail" class="no-right" placeholder="Enter email" />
+                <input type="email" id="regEmail" class="no-right" placeholder="Enter owner email" />
               </div>
             </div>
 
@@ -477,8 +477,8 @@
           </div>
 
           <div class="action-stack" style="margin-top:18px;">
-            <button class="primary-btn" onclick="registerUser()">
-              <i class="fas fa-user-plus"></i> Submit for Approval
+            <button class="primary-btn" onclick="registerCompanyRequest()">
+              <i class="fas fa-paper-plane"></i> Send Company Request
             </button>
           </div>
 
@@ -611,14 +611,14 @@
       }
     }
 
-    async function registerUser() {
-      const name = document.getElementById("regName").value.trim();
-      const mobile = document.getElementById("regMobile").value.trim();
+    async function registerCompanyRequest() {
+      const companyName = document.getElementById("regCompanyName").value.trim();
+      const ownerName = document.getElementById("regName").value.trim();
       const email = document.getElementById("regEmail").value.trim().toLowerCase();
       const password = document.getElementById("regPassword").value.trim();
       const confirmPassword = document.getElementById("regConfirmPassword").value.trim();
 
-      if (!name || !mobile || !email || !password || !confirmPassword) {
+      if (!companyName || !ownerName || !email || !password || !confirmPassword) {
         showStatus("registerStatus", "Saare fields fill karo.", "error");
         return;
       }
@@ -634,34 +634,39 @@
       }
 
       try {
-        const res = await fetch(`${API_BASE}/registerUser`, {
+        const res = await fetch(`${API_BASE}/requestCompanySignup`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ name, mobile, email, password })
+          body: JSON.stringify({
+            companyName,
+            ownerName,
+            email,
+            password
+          })
         });
 
         const data = await res.json();
 
         if (!data.success) {
-          showStatus("registerStatus", data.message || "Register failed", "error");
+          showStatus("registerStatus", data.message || "Request failed", "error");
           return;
         }
 
         showStatus(
           "registerStatus",
-          data.message || "Account request submit ho gaya. Admin approve karega tabhi login hoga.",
+          data.message || "Company request admin approval ke liye chali gayi",
           "success"
         );
 
+        document.getElementById("regCompanyName").value = "";
         document.getElementById("regName").value = "";
-        document.getElementById("regMobile").value = "";
         document.getElementById("regEmail").value = "";
         document.getElementById("regPassword").value = "";
         document.getElementById("regConfirmPassword").value = "";
       } catch (error) {
-        console.log("Register error:", error);
+        console.log("Company signup request error:", error);
         showStatus("registerStatus", "Server error", "error");
       }
     }
