@@ -615,9 +615,21 @@
     });
   </script>
 
+  <!-- YAHAN PASTE KAR -->
   <script src="js/auth.js"></script>
   <script>
     requireRole(["Admin"]);
+
+    const loggedInUser = JSON.parse(localStorage.getItem("erpLoggedInUser"));
+
+    if (
+      !loggedInUser ||
+      String(loggedInUser.email || "").toLowerCase() !== "grudrapratap0@gmail.com"
+    ) {
+      alert("Sirf main admin is page ko dekh sakta hai.");
+      window.location.href = "dashboard.html";
+    }
   </script>
+
 </body>
 </html>
