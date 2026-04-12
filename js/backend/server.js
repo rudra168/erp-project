@@ -201,8 +201,7 @@ app.post("/addSticker", async (req, res) => {
       lot,
       metalType,
       processType,
-      barcode,
-      companyId = null
+      barcode
     } = req.body;
 
     if (!serial || !productName || !purity || !sku || !size || !weight || !lot || !barcode) {
@@ -215,21 +214,16 @@ app.post("/addSticker", async (req, res) => {
     const cleanLot = String(lot).trim();
     const cleanSerial = String(serial).trim();
     const cleanBarcode = String(barcode).trim();
-    const cleanCompanyId = companyId ? Number(companyId) : null;
 
     const [dupLotSerial] = await pool.query(
       `
       SELECT id FROM stock
       WHERE lot_number = ?
         AND serial = ?
-        AND (
-          (company_id IS NULL AND ? IS NULL)
-          OR company_id = ?
-        )
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [cleanLot, cleanSerial, cleanCompanyId, cleanCompanyId]
+      [cleanLot, cleanSerial]
     );
 
     if (dupLotSerial.length > 0) {
@@ -243,14 +237,10 @@ app.post("/addSticker", async (req, res) => {
       `
       SELECT id FROM stock
       WHERE barcode = ?
-        AND (
-          (company_id IS NULL AND ? IS NULL)
-          OR company_id = ?
-        )
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [cleanBarcode, cleanCompanyId, cleanCompanyId]
+      [cleanBarcode]
     );
 
     if (dupBarcode.length > 0) {
@@ -263,7 +253,6 @@ app.post("/addSticker", async (req, res) => {
     await pool.query(
       `
       INSERT INTO stock (
-        company_id,
         serial,
         product_name,
         purity,
@@ -276,10 +265,9 @@ app.post("/addSticker", async (req, res) => {
         metal_type,
         process_type,
         status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        cleanCompanyId,
         cleanSerial,
         String(productName).trim(),
         String(purity).trim(),
@@ -325,8 +313,7 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       metalType = "",
       processType = "",
       qty = 1,
-      status = "IN_STOCK",
-      companyId = null
+      status = "IN_STOCK"
     } = req.body;
 
     if (!oldBarcode) {
@@ -343,7 +330,6 @@ app.put("/updateSticker/:barcode", async (req, res) => {
     const cleanLot = String(lot).trim();
     const cleanSerial = String(serial).trim();
     const newBarcode = String(barcode || oldBarcode).trim();
-    const cleanCompanyId = companyId ? Number(companyId) : null;
 
     const [currentRows] = await pool.query(
       `SELECT id FROM stock WHERE barcode = ? LIMIT 1`,
@@ -362,14 +348,10 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       WHERE lot_number = ?
         AND serial = ?
         AND id <> ?
-        AND (
-          (company_id IS NULL AND ? IS NULL)
-          OR company_id = ?
-        )
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [cleanLot, cleanSerial, currentId, cleanCompanyId, cleanCompanyId]
+      [cleanLot, cleanSerial, currentId]
     );
 
     if (dupLotSerial.length > 0) {
@@ -384,14 +366,10 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       SELECT id FROM stock
       WHERE barcode = ?
         AND id <> ?
-        AND (
-          (company_id IS NULL AND ? IS NULL)
-          OR company_id = ?
-        )
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [newBarcode, currentId, cleanCompanyId, cleanCompanyId]
+      [newBarcode, currentId]
     );
 
     if (dupBarcode.length > 0) {
@@ -405,7 +383,6 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       `
       UPDATE stock
       SET
-        company_id = ?,
         serial = ?,
         product_name = ?,
         purity = ?,
@@ -422,7 +399,6 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       WHERE id = ?
       `,
       [
-        cleanCompanyId,
         cleanSerial,
         String(productName).trim(),
         String(purity).trim(),
@@ -499,7 +475,6 @@ app.post("/saveInvoice", async (req, res) => {
     await connection.beginTransaction();
 
     const {
-      companyId = null,
       invoiceNumber = "",
       customerName = "",
       mobile = "",
@@ -525,20 +500,17 @@ app.post("/saveInvoice", async (req, res) => {
       });
     }
 
-    const cleanCompanyId = companyId ? Number(companyId) : null;
-
     const [saleInsert] = await connection.query(
       `
       INSERT INTO sales_history
       (
-        company_id, invoice_number, customer_name, mobile, gst_number, invoice_date,
+        invoice_number, customer_name, mobile, gst_number, invoice_date,
         payment_mode, payment_status, paid_amount, due_amount,
         rate_per_gram, mc_rate, round_off, subtotal, total_amount, created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `,
       [
-        cleanCompanyId,
         invoiceNumber,
         customerName,
         mobile,
@@ -565,12 +537,11 @@ app.post("/saveInvoice", async (req, res) => {
         `
         INSERT INTO sales_items
         (
-          company_id, sale_id, invoice_number, barcode, product_name, sku, purity, size, weight, lot_number, customer_name, created_at
+          sale_id, invoice_number, barcode, product_name, sku, purity, size, weight, lot_number, customer_name, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         `,
         [
-          cleanCompanyId,
           saleId,
           invoiceNumber,
           barcode,
@@ -785,14 +756,12 @@ app.post("/requestCompanySignup", async (req, res) => {
 ========================= */
 app.get("/pendingCompanyRequests", async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `
+    const [rows] = await pool.query(`
       SELECT *
       FROM company_signup_requests
       WHERE status = 'pending'
       ORDER BY id DESC
-      `
-    );
+    `);
 
     return res.json({
       success: true,
@@ -885,12 +854,10 @@ app.put("/approveCompanyRequest/:id", async (req, res) => {
       ]
     );
 
-    const companyId = companyInsert.insertId;
-
     await connection.query(
       `
-      INSERT INTO users (name, mobile, email, password, role, status, company_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (name, mobile, email, password, role, status)
+      VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
         requestData.owner_name,
@@ -898,8 +865,7 @@ app.put("/approveCompanyRequest/:id", async (req, res) => {
         requestData.owner_email,
         requestData.password,
         "Admin",
-        "approved",
-        companyId
+        "approved"
       ]
     );
 
@@ -993,13 +959,11 @@ app.put("/rejectCompanyRequest/:id", async (req, res) => {
 ========================= */
 app.get("/approvedCompanies", async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `
+    const [rows] = await pool.query(`
       SELECT *
       FROM companies
       ORDER BY id DESC
-      `
-    );
+    `);
 
     return res.json({
       success: true,
@@ -1023,15 +987,13 @@ app.post("/registerUser", async (req, res) => {
       name = "",
       mobile = "",
       email = "",
-      password = "",
-      companyId = null
+      password = ""
     } = req.body;
 
     const cleanName = String(name).trim();
     const cleanMobile = String(mobile).trim();
     const cleanEmail = String(email).trim().toLowerCase();
     const cleanPassword = String(password).trim();
-    const cleanCompanyId = companyId ? Number(companyId) : null;
 
     if (!cleanName || !cleanMobile || !cleanEmail || !cleanPassword) {
       return res.json({
@@ -1054,10 +1016,10 @@ app.post("/registerUser", async (req, res) => {
 
     await pool.query(
       `
-      INSERT INTO users (name, mobile, email, password, role, status, company_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (name, mobile, email, password, role, status)
+      VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [cleanName, cleanMobile, cleanEmail, cleanPassword, "", "pending", cleanCompanyId]
+      [cleanName, cleanMobile, cleanEmail, cleanPassword, "", "pending"]
     );
 
     return res.json({
@@ -1078,14 +1040,12 @@ app.post("/registerUser", async (req, res) => {
 ========================= */
 app.get("/pendingUsers", async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `
-      SELECT id, name, mobile, email, role, status, company_id, created_at
+    const [rows] = await pool.query(`
+      SELECT id, name, mobile, email, role, status, created_at
       FROM users
       WHERE status = 'pending'
       ORDER BY id DESC
-      `
-    );
+    `);
 
     return res.json({
       success: true,
@@ -1105,14 +1065,12 @@ app.get("/pendingUsers", async (req, res) => {
 ========================= */
 app.get("/approvedUsers", async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `
-      SELECT id, name, mobile, email, role, status, company_id, created_at
+    const [rows] = await pool.query(`
+      SELECT id, name, mobile, email, role, status, created_at
       FROM users
       WHERE status = 'approved'
       ORDER BY id DESC
-      `
-    );
+    `);
 
     return res.json({
       success: true,
