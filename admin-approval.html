@@ -877,23 +877,23 @@
         return;
       }
 
+      const isSuperAdmin =
+        String(loggedInUser.role || "").toLowerCase() === "superadmin" ||
+        String(loggedInUser.email || "").toLowerCase() === "grudrapratap0@gmail.com";
+
+      if (!isSuperAdmin) {
+        alert("Sirf main super admin is page ko dekh sakta hai.");
+        window.location.href = "dashboard.html";
+        return;
+      }
+
       loadApprovalData();
     });
   </script>
 
   <script src="js/auth.js"></script>
   <script>
-    requireRole(["Admin"]);
-
-    const loggedInUser = JSON.parse(localStorage.getItem("erpLoggedInUser"));
-
-    if (
-      !loggedInUser ||
-      String(loggedInUser.email || "").toLowerCase() !== "grudrapratap0@gmail.com"
-    ) {
-      alert("Sirf main super admin is page ko dekh sakta hai.");
-      window.location.href = "dashboard.html";
-    }
+    requireLogin();
   </script>
 </body>
 </html>
