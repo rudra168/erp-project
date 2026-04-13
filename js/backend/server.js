@@ -37,22 +37,21 @@ process.on("unhandledRejection", (reason) => {
   console.error("UNHANDLED REJECTION:", reason);
 });
 
+/* =========================
+   HELPERS
+========================= */
 function format3(value) {
   const n = Number(value || 0);
-  return isNaN(n) ? "0.000" : n.toFixed(3);
+  return Number.isNaN(n) ? "0.000" : n.toFixed(3);
 }
 
 function num(value) {
   const n = Number(value || 0);
-  return isNaN(n) ? 0 : n;
+  return Number.isNaN(n) ? 0 : n;
 }
 
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-function normalizeStatus(value, fallback = "") {
-  return String(value || fallback).trim().toUpperCase();
 }
 
 function getRequestedCompanyId(req) {
@@ -68,36 +67,10 @@ function getRequestedCompanyId(req) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function isSuperAdminUser(user = {}) {
-  const role = String(user.role || "").trim().toLowerCase();
-  const email = normalizeEmail(user.email || "");
-  return role === "superadmin" || email === "grudrapratap0@gmail.com";
-}
-
 async function testDbConnection() {
   const conn = await pool.getConnection();
   await conn.ping();
   conn.release();
-}
-
-async function findUserByEmailAndPassword(email, password) {
-  const [rows] = await pool.query(
-    `
-    SELECT 
-      u.*,
-      c.company_name,
-      c.owner_name AS company_owner_name,
-      c.owner_email AS company_owner_email,
-      c.status AS company_status
-    FROM users u
-    LEFT JOIN companies c ON c.id = u.company_id
-    WHERE u.email = ? AND u.password = ?
-    LIMIT 1
-    `,
-    [email, password]
-  );
-
-  return rows.length ? rows[0] : null;
 }
 
 async function ensureSuperAdminExists() {
@@ -132,6 +105,26 @@ async function ensureSuperAdminExists() {
   } catch (error) {
     console.error("SuperAdmin create error:", error);
   }
+}
+
+async function findUserByEmailAndPassword(email, password) {
+  const [rows] = await pool.query(
+    `
+    SELECT 
+      u.*,
+      c.company_name,
+      c.owner_name AS company_owner_name,
+      c.owner_email AS company_owner_email,
+      c.status AS company_status
+    FROM users u
+    LEFT JOIN companies c ON c.id = u.company_id
+    WHERE u.email = ? AND u.password = ?
+    LIMIT 1
+    `,
+    [email, password]
+  );
+
+  return rows.length ? rows[0] : null;
 }
 
 /* =========================
@@ -174,17 +167,11 @@ app.get("/api/dashboard", async (req, res) => {
   try {
     const companyId = getRequestedCompanyId(req);
 
-    let stockWhere = "";
-    let salesWhere = "";
-    const stockParams = [];
-    const salesParams = [];
+    const stockWhere = companyId !== null ? "WHERE company_id = ?" : "";
+    const salesWhere = companyId !== null ? "WHERE company_id = ?" : "";
 
-    if (companyId !== null) {
-      stockWhere = "WHERE company_id = ?";
-      salesWhere = "WHERE company_id = ?";
-      stockParams.push(companyId);
-      salesParams.push(companyId);
-    }
+    const stockParams = companyId !== null ? [companyId] : [];
+    const salesParams = companyId !== null ? [companyId] : [];
 
     const [stockSummary] = await pool.query(
       `
@@ -339,9 +326,10 @@ app.post("/addSticker", async (req, res) => {
       companyId
     } = req.body;
 
-    const finalCompanyId = companyId === null || companyId === undefined || companyId === ""
-      ? null
-      : Number(companyId);
+    const finalCompanyId =
+      companyId === null || companyId === undefined || companyId === ""
+        ? null
+        : Number(companyId);
 
     if (!serial || !productName || !purity || !sku || !size || !weight || !lot || !barcode) {
       return res.json({
