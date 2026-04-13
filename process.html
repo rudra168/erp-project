@@ -267,9 +267,38 @@
   </div>
 
   <script>
-    let stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
-    let lotData = JSON.parse(localStorage.getItem("lotData")) || [];
-    let karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+    const API_BASE = "https://erp-project-production-ba38.up.railway.app";
+
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function companyScopedKey(baseKey) {
+      const companyId = getCurrentCompanyId();
+      const scope = isSuperAdmin() ? "superadmin" : (companyId ?? "no_company");
+      return `${baseKey}_${scope}`;
+    }
+
+    let stockItems = [];
+    let lotData = JSON.parse(localStorage.getItem(companyScopedKey("lotData"))) || [];
+    let karigarData = JSON.parse(localStorage.getItem(companyScopedKey("karigarData"))) || [];
 
     function showToast(message, type = "info", title = "") {
       const container = document.getElementById("toastContainer");
@@ -304,10 +333,48 @@
       }, 2600);
     }
 
+    function saveLotDataLocal() {
+      localStorage.setItem(companyScopedKey("lotData"), JSON.stringify(lotData));
+    }
+
+    function saveKarigarDataLocal() {
+      localStorage.setItem(companyScopedKey("karigarData"), JSON.stringify(karigarData));
+    }
+
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       if (sidebar) {
         sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    function getItemCompanyId(item) {
+      const raw = item?.company_id ?? item?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function filterCompanyStock(items) {
+      if (isSuperAdmin()) return Array.isArray(items) ? items : [];
+
+      const currentCompanyId = getCurrentCompanyId();
+      return (Array.isArray(items) ? items : []).filter((item) => {
+        return getItemCompanyId(item) === currentCompanyId;
+      });
+    }
+
+    async function loadStockFromServer() {
+      try {
+        const companyId = getCurrentCompanyId();
+        const url = companyId !== null && !isSuperAdmin()
+          ? `${API_BASE}/getStock?companyId=${encodeURIComponent(companyId)}`
+          : `${API_BASE}/getStock`;
+
+        const res = await fetch(url, { cache: "no-store" });
+        const data = await res.json();
+        stockItems = filterCompanyStock(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.log("Process stock load error:", error);
+        stockItems = [];
       }
     }
 
@@ -343,8 +410,6 @@
     }
 
     function saveProcessLot() {
-      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
-
       const lotNo = document.getElementById("processLotNo")?.value?.trim() || "";
       const raw = Number(document.getElementById("processRawWeight")?.value || 0);
       const loss = Number(document.getElementById("processLossWeight")?.value || 0);
@@ -368,6 +433,7 @@
         finalWeight,
         usedWeight: used,
         balanceWeight: balance,
+        company_id: getCurrentCompanyId(),
         savedAt: new Date().toLocaleString()
       };
 
@@ -377,8 +443,7 @@
         lotData.push(lotObj);
       }
 
-      localStorage.setItem("lotData", JSON.stringify(lotData));
-
+      saveLotDataLocal();
       renderProcessTable();
       loadKarigarLotDropdown();
       updateProcessCalculations();
@@ -408,9 +473,6 @@
       const tbody = document.getElementById("processTableBody");
       if (!tbody) return;
 
-      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
-      stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
-
       tbody.innerHTML = "";
 
       if (!lotData.length) {
@@ -439,7 +501,6 @@
       const lotSelect = document.getElementById("karigarLot");
       if (!lotSelect) return;
 
-      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
       lotSelect.innerHTML = '<option value="">Select Lot</option>';
 
       lotData.forEach((lot) => {
@@ -448,8 +509,6 @@
     }
 
     function saveKarigarWork() {
-      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
-
       const name = document.getElementById("karigarName")?.value?.trim() || "";
       const lot = document.getElementById("karigarLot")?.value?.trim() || "";
       const given = Number(document.getElementById("karigarGivenWeight")?.value || 0);
@@ -474,11 +533,12 @@
         given,
         returned,
         loss,
+        company_id: getCurrentCompanyId(),
         time: new Date().toLocaleString()
       };
 
       karigarData.push(work);
-      localStorage.setItem("karigarData", JSON.stringify(karigarData));
+      saveKarigarDataLocal();
 
       renderKarigarList();
       renderKarigarLossReport();
@@ -498,7 +558,6 @@
       const box = document.getElementById("karigarList");
       if (!box) return;
 
-      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
       box.innerHTML = "";
 
       if (!karigarData.length) {
@@ -525,7 +584,6 @@
       const tbody = document.getElementById("karigarLossReportBody");
       if (!tbody) return;
 
-      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
       tbody.innerHTML = "";
 
       if (!karigarData.length) {
@@ -567,11 +625,11 @@
     document.getElementById("processRawWeight")?.addEventListener("input", updateProcessCalculations);
     document.getElementById("processLossWeight")?.addEventListener("input", updateProcessCalculations);
 
-    window.addEventListener("load", function () {
-      stockItems = JSON.parse(localStorage.getItem("stockItems")) || [];
-      lotData = JSON.parse(localStorage.getItem("lotData")) || [];
-      karigarData = JSON.parse(localStorage.getItem("karigarData")) || [];
+    window.addEventListener("load", async function () {
+      lotData = JSON.parse(localStorage.getItem(companyScopedKey("lotData"))) || [];
+      karigarData = JSON.parse(localStorage.getItem(companyScopedKey("karigarData"))) || [];
 
+      await loadStockFromServer();
       renderProcessTable();
       loadKarigarLotDropdown();
       renderKarigarList();

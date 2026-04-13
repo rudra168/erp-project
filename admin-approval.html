@@ -6,12 +6,19 @@
   <title>Admin Approval Panel</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
   <style>
-    .approval-wrap {
+    .approval-layout {
       display: grid;
-      grid-template-columns: 1.4fr 1fr;
+      grid-template-columns: 1.5fr 1fr;
       gap: 18px;
       margin-top: 18px;
+      align-items: start;
+    }
+
+    .approval-main {
+      display: grid;
+      gap: 18px;
     }
 
     .approval-card,
@@ -27,7 +34,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 14px;
     }
@@ -68,7 +75,7 @@
 
     .search-box {
       position: relative;
-      max-width: 320px;
+      max-width: 360px;
       width: 100%;
     }
 
@@ -106,7 +113,7 @@
     .approval-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 860px;
+      min-width: 980px;
     }
 
     .approval-table th,
@@ -280,8 +287,34 @@
       line-height: 1.6;
     }
 
+    .approved-company-list {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .approved-company-item {
+      border: 1px solid #edf2f7;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .approved-company-item strong {
+      display: block;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .approved-company-item p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
     @media (max-width: 980px) {
-      .approval-wrap {
+      .approval-layout {
         grid-template-columns: 1fr;
       }
     }
@@ -304,6 +337,7 @@
           <li><a href="invoice.html"><i class="fas fa-file-invoice"></i> Invoice</a></li>
           <li><a href="stock.html"><i class="fas fa-boxes-stacked"></i> Stock</a></li>
           <li><a href="sticker.html"><i class="fas fa-barcode"></i> Sticker</a></li>
+          <li><a href="settings.html"><i class="fas fa-gear"></i> Settings</a></li>
         </ul>
       </div>
     </aside>
@@ -317,7 +351,7 @@
 
           <div class="title">
             <h1>RPJ MANUFACTURER</h1>
-            <p>User Approval Management</p>
+            <p>User & Company Approval Management</p>
           </div>
         </div>
 
@@ -331,35 +365,78 @@
         </div>
       </div>
 
-      <div class="approval-wrap">
-        <div class="approval-card">
-          <div class="approval-head">
-            <h3>Pending User Requests</h3>
+      <div class="approval-layout">
+        <div class="approval-main">
+          <div class="approval-card">
+            <div class="approval-head">
+              <h3>Pending Company Requests</h3>
 
-            <div class="search-box">
-              <i class="fas fa-search"></i>
-              <input type="text" id="approvalSearch" placeholder="Search by name / email / mobile" oninput="renderPendingUsers()" />
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input
+                  type="text"
+                  id="companySearch"
+                  placeholder="Search by company / owner / email"
+                  oninput="renderPendingCompanies()"
+                />
+              </div>
+            </div>
+
+            <div class="approval-table-wrap">
+              <table class="approval-table">
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Owner</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingCompaniesBody"></tbody>
+              </table>
+            </div>
+
+            <div class="small-note">
+              Nayi company signup request aayegi to yahan pending me dikhegi. Approve karne par company + admin user dono create ho jayenge.
             </div>
           </div>
 
-          <div class="approval-table-wrap">
-            <table class="approval-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Mobile</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Assign Role</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="pendingUsersBody"></tbody>
-            </table>
-          </div>
+          <div class="approval-card">
+            <div class="approval-head">
+              <h3>Pending User Requests</h3>
 
-          <div class="small-note">
-            New user register karega to yahin pending me dikhega. Approve ke baad hi login allow hoga.
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input
+                  type="text"
+                  id="approvalSearch"
+                  placeholder="Search by name / email / mobile"
+                  oninput="renderPendingUsers()"
+                />
+              </div>
+            </div>
+
+            <div class="approval-table-wrap">
+              <table class="approval-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Mobile</th>
+                    <th>Email</th>
+                    <th>Company ID</th>
+                    <th>Status</th>
+                    <th>Assign Role</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingUsersBody"></tbody>
+              </table>
+            </div>
+
+            <div class="small-note">
+              User approve hone ke baad hi login allow hoga. Company user ko uske company ke hisaab se role do.
+            </div>
           </div>
         </div>
 
@@ -368,17 +445,28 @@
 
           <div class="summary-grid">
             <div class="summary-box">
-              <p>Total Pending</p>
+              <p>Total Pending Companies</p>
+              <h2 id="pendingCompanyCount">0</h2>
+            </div>
+
+            <div class="summary-box">
+              <p>Total Approved Companies</p>
+              <h2 id="approvedCompanyCount">0</h2>
+            </div>
+
+            <div class="summary-box">
+              <p>Total Pending Users</p>
               <h2 id="pendingCount">0</h2>
             </div>
 
             <div class="summary-box">
-              <p>Total Approved</p>
+              <p>Total Approved Users</p>
               <h2 id="approvedCount">0</h2>
             </div>
           </div>
 
-          <div class="recent-list" id="recentApprovedList"></div>
+          <div id="approvedCompaniesList" class="approved-company-list"></div>
+          <div id="recentApprovedList" class="recent-list"></div>
         </div>
       </div>
     </main>
@@ -386,6 +474,9 @@
 
   <script>
     const API_BASE = "https://erp-project-production-ba38.up.railway.app";
+
+    let pendingCompaniesData = [];
+    let approvedCompaniesData = [];
     let pendingUsersData = [];
     let approvedUsersData = [];
 
@@ -413,14 +504,42 @@
       });
     }
 
-    function getSearchText() {
+    function getUserSearchText() {
       return String(document.getElementById("approvalSearch")?.value || "").trim().toLowerCase();
     }
 
+    function getCompanySearchText() {
+      return String(document.getElementById("companySearch")?.value || "").trim().toLowerCase();
+    }
+
+    async function fetchPendingCompanies() {
+      try {
+        const res = await fetch(`${API_BASE}/pendingCompanyRequests`, { cache: "no-store" });
+        const data = await res.json();
+        pendingCompaniesData = Array.isArray(data.requests) ? data.requests : [];
+      } catch (error) {
+        pendingCompaniesData = [];
+      }
+    }
+
+    async function fetchApprovedCompanies() {
+      try {
+        const res = await fetch(`${API_BASE}/approvedCompanies`, { cache: "no-store" });
+        const data = await res.json();
+        approvedCompaniesData = Array.isArray(data.companies) ? data.companies : [];
+      } catch (error) {
+        approvedCompaniesData = [];
+      }
+    }
+
     async function fetchPendingUsers() {
-      const res = await fetch(`${API_BASE}/pendingUsers`, { cache: "no-store" });
-      const data = await res.json();
-      pendingUsersData = Array.isArray(data.users) ? data.users : [];
+      try {
+        const res = await fetch(`${API_BASE}/pendingUsers`, { cache: "no-store" });
+        const data = await res.json();
+        pendingUsersData = Array.isArray(data.users) ? data.users : [];
+      } catch (error) {
+        pendingUsersData = [];
+      }
     }
 
     async function fetchApprovedUsers() {
@@ -433,9 +552,68 @@
       }
     }
 
+    function renderPendingCompanies() {
+      const tbody = document.getElementById("pendingCompaniesBody");
+      const searchText = getCompanySearchText();
+
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const filtered = pendingCompaniesData.filter((company) => {
+        const hay =
+          `${company.company_name || ""} ${company.owner_name || ""} ${company.owner_email || ""}`.toLowerCase();
+        return hay.includes(searchText);
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-box">No pending company requests found</div>
+            </td>
+          </tr>
+        `;
+        updateSummary();
+        return;
+      }
+
+      filtered.forEach((company) => {
+        const initials = String(company.company_name || "C").trim().charAt(0).toUpperCase();
+
+        tbody.innerHTML += `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="mini-avatar">${initials}</div>
+                <div class="user-meta">
+                  <strong>${company.company_name || "-"}</strong>
+                  <span>Requested: ${formatDateTime(company.created_at)}</span>
+                </div>
+              </div>
+            </td>
+            <td>${company.owner_name || "-"}</td>
+            <td>${company.owner_email || "-"}</td>
+            <td><span class="status-pill status-pending">Pending</span></td>
+            <td>
+              <div class="btn-row">
+                <button class="approve-btn" type="button" onclick="approveCompanyRequest('${company.id}')">
+                  <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="reject-btn" type="button" onclick="rejectCompanyRequest('${company.id}')">
+                  <i class="fas fa-xmark"></i> Reject
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      updateSummary();
+    }
+
     function renderPendingUsers() {
       const tbody = document.getElementById("pendingUsersBody");
-      const searchText = getSearchText();
+      const searchText = getUserSearchText();
 
       if (!tbody) return;
       tbody.innerHTML = "";
@@ -448,7 +626,7 @@
       if (!filtered.length) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6">
+            <td colspan="7">
               <div class="empty-box">No pending user requests found</div>
             </td>
           </tr>
@@ -473,6 +651,7 @@
             </td>
             <td>${user.mobile || "-"}</td>
             <td>${user.email || "-"}</td>
+            <td>${user.company_id ?? "-"}</td>
             <td><span class="status-pill status-pending">Pending</span></td>
             <td>
               <select class="role-select" id="role-${user.id}">
@@ -502,6 +681,54 @@
       updateSummary();
     }
 
+    async function approveCompanyRequest(requestId) {
+      const ok = confirm("Kya aap is company request ko approve karna chahte ho?");
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/approveCompanyRequest/${requestId}`, {
+          method: "PUT"
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          alert(data.message || "Company approve failed");
+          return;
+        }
+
+        alert(data.message || "Company approved");
+        await loadApprovalData();
+      } catch (error) {
+        console.log("Approve company error:", error);
+        alert("Server error");
+      }
+    }
+
+    async function rejectCompanyRequest(requestId) {
+      const ok = confirm("Kya aap is company request ko reject karna chahte ho?");
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/rejectCompanyRequest/${requestId}`, {
+          method: "PUT"
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          alert(data.message || "Company reject failed");
+          return;
+        }
+
+        alert(data.message || "Company rejected");
+        await loadApprovalData();
+      } catch (error) {
+        console.log("Reject company error:", error);
+        alert("Server error");
+      }
+    }
+
     async function approveUser(userId) {
       const role = document.getElementById(`role-${userId}`)?.value || "";
 
@@ -529,7 +756,7 @@
         alert(`User approved as ${role}`);
         await loadApprovalData();
       } catch (error) {
-        console.log("Approve error:", error);
+        console.log("Approve user error:", error);
         alert("Server error");
       }
     }
@@ -553,22 +780,55 @@
         alert("User rejected");
         await loadApprovalData();
       } catch (error) {
-        console.log("Reject error:", error);
+        console.log("Reject user error:", error);
         alert("Server error");
       }
     }
 
     function updateSummary() {
+      document.getElementById("pendingCompanyCount").textContent = pendingCompaniesData.length;
+      document.getElementById("approvedCompanyCount").textContent = approvedCompaniesData.length;
       document.getElementById("pendingCount").textContent = pendingUsersData.length;
       document.getElementById("approvedCount").textContent = approvedUsersData.length;
+
+      renderApprovedCompanies();
       renderRecentApproved();
+    }
+
+    function renderApprovedCompanies() {
+      const box = document.getElementById("approvedCompaniesList");
+      if (!box) return;
+
+      box.innerHTML = `<h3 style="margin-top:18px;">Approved Companies</h3>`;
+
+      if (!approvedCompaniesData.length) {
+        box.innerHTML += `
+          <div class="approved-company-item">
+            <p>No approved companies yet</p>
+          </div>
+        `;
+        return;
+      }
+
+      approvedCompaniesData.slice(0, 5).forEach((company) => {
+        box.innerHTML += `
+          <div class="approved-company-item">
+            <strong>${company.company_name || "-"}</strong>
+            <p>
+              Owner: ${company.owner_name || "-"}<br>
+              Email: ${company.owner_email || "-"}<br>
+              Status: ${company.status || "-"}
+            </p>
+          </div>
+        `;
+      });
     }
 
     function renderRecentApproved() {
       const box = document.getElementById("recentApprovedList");
       if (!box) return;
 
-      box.innerHTML = `<h3 style="margin-top:18px;">Recently Approved</h3>`;
+      box.innerHTML = `<h3 style="margin-top:18px;">Recently Approved Users</h3>`;
 
       if (!approvedUsersData.length) {
         box.innerHTML += `
@@ -586,6 +846,7 @@
             <p>
               Email: ${user.email || "-"}<br>
               Role: ${user.role || "-"}<br>
+              Company ID: ${user.company_id ?? "-"}<br>
               Status: ${user.status || "-"}
             </p>
           </div>
@@ -595,8 +856,12 @@
 
     async function loadApprovalData() {
       try {
+        await fetchPendingCompanies();
+        await fetchApprovedCompanies();
         await fetchPendingUsers();
         await fetchApprovedUsers();
+
+        renderPendingCompanies();
         renderPendingUsers();
         updateSummary();
       } catch (error) {
@@ -606,6 +871,7 @@
 
     window.addEventListener("load", function () {
       const loggedInUser = JSON.parse(localStorage.getItem("erpLoggedInUser"));
+
       if (!loggedInUser) {
         window.location.href = "login.html";
         return;
@@ -615,7 +881,6 @@
     });
   </script>
 
-  <!-- YAHAN PASTE KAR -->
   <script src="js/auth.js"></script>
   <script>
     requireRole(["Admin"]);
@@ -626,10 +891,9 @@
       !loggedInUser ||
       String(loggedInUser.email || "").toLowerCase() !== "grudrapratap0@gmail.com"
     ) {
-      alert("Sirf main admin is page ko dekh sakta hai.");
+      alert("Sirf main super admin is page ko dekh sakta hai.");
       window.location.href = "dashboard.html";
     }
   </script>
-
 </body>
 </html>

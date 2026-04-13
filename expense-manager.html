@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -239,7 +238,34 @@
   <div id="toastBox" class="toast-box"></div>
 
   <script>
-    let expenseData = JSON.parse(localStorage.getItem("expenseData")) || [];
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function companyScopedKey(baseKey) {
+      const companyId = getCurrentCompanyId();
+      const scope = isSuperAdmin() ? "superadmin" : (companyId ?? "no_company");
+      return `${baseKey}_${scope}`;
+    }
+
+    let expenseData = JSON.parse(localStorage.getItem(companyScopedKey("expenseData"))) || [];
 
     function showToast(message, type = "success") {
       const box = document.getElementById("toastBox");
@@ -270,7 +296,7 @@
     }
 
     function saveExpenseData() {
-      localStorage.setItem("expenseData", JSON.stringify(expenseData));
+      localStorage.setItem(companyScopedKey("expenseData"), JSON.stringify(expenseData));
     }
 
     function clearExpenseForm() {
@@ -307,7 +333,8 @@
         amount,
         category,
         reason,
-        note
+        note,
+        company_id: getCurrentCompanyId()
       };
 
       if (editId) {
@@ -473,6 +500,8 @@
     });
 
     window.addEventListener("load", function () {
+      expenseData = JSON.parse(localStorage.getItem(companyScopedKey("expenseData"))) || [];
+
       const today = new Date();
       const currentMonth = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
       const monthInput = document.getElementById("filterMonth");

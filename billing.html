@@ -153,6 +153,26 @@
       background: #eff6ff;
       border-color: #bfdbfe;
     }
+
+    .company-info-box {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #fffaf2;
+      border: 1px solid #ecd5a5;
+    }
+
+    .company-info-box h3 {
+      margin-bottom: 10px;
+      color: #7c5a1d;
+    }
+
+    .company-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -207,6 +227,16 @@
         <div class="section-box">
           <h2>Billing</h2>
           <p>Invoice se item auto billing me aayega. Yahan final bill, QR, due aur metal settlement sab manage hoga.</p>
+
+          <div class="company-info-box">
+            <h3>Auto Company Settings</h3>
+            <div class="company-grid">
+              <div><strong>Company:</strong> <span id="previewCompanyName">-</span></div>
+              <div><strong>GSTIN:</strong> <span id="previewCompanyGstin">-</span></div>
+              <div><strong>UPI ID:</strong> <span id="previewCompanyUpi">-</span></div>
+              <div><strong>UPI Name:</strong> <span id="previewCompanyUpiName">-</span></div>
+            </div>
+          </div>
 
           <div class="sub-card">
             <h3>Customer Details</h3>
@@ -445,7 +475,8 @@
                   </div>
 
                   <div class="info-note">
-                    Online select karne par QR auto generate hoga. Permanent UPI settings page se aayega.
+                    Online select karte hi QR auto generate hoga.
+                    UPI settings se auto aayega.
                   </div>
                 </div>
               </div>
@@ -457,7 +488,7 @@
               <div class="form-grid">
                 <div class="input-box">
                   <label>Due Note</label>
-                  <input type="text" id="billDueNote" placeholder="Example: Bhai jab convenient ho tab settle kar dena" />
+                  <input type="text" id="billDueNote" placeholder="Example: Baad me payment karega" />
                 </div>
 
                 <div class="input-box">
@@ -471,10 +502,6 @@
 
               <div class="summary-chip-row">
                 <div class="summary-chip danger-soft">Pending Due: ₹ <span id="duePreviewText">0.00</span></div>
-              </div>
-
-              <div class="info-note">
-                Sensitive customer ke liye polite manual reminder hi better rahega.
               </div>
             </div>
 
@@ -522,9 +549,36 @@
 
   <script>
     let billingItems = [];
-    let removedBillingBarcodes = JSON.parse(localStorage.getItem("removedBillingBarcodes")) || [];
+    let removedBillingBarcodes = [];
     let qrInstance = null;
     let autoProcessing = false;
+
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function companyScopedKey(baseKey) {
+      const companyId = getCurrentCompanyId();
+      const scope = isSuperAdmin() ? "superadmin" : (companyId ?? "no_company");
+      return `${baseKey}_${scope}`;
+    }
 
     function getErpSettings() {
       const defaultSettings = {
@@ -537,11 +591,38 @@
         address: "baulakud 42mauza cuttack-754112, Odisha",
         declaration: "Declaration : Subject to JHINKIRIA ,42 MOUJA,CUTTACK-112 Jurisdiction only.",
         upi_id: "yourupi@okaxis",
-        upi_name: "RAJPATI ENTERPRISE"
+        upi_name: "RAJPATI ENTERPRISE",
+        default_rate_per_gram: "",
+        default_mc_rate: ""
       };
 
-      const saved = JSON.parse(localStorage.getItem("erpBillingSettings"));
-      return saved ? { ...defaultSettings, ...saved } : defaultSettings;
+      const companySettingsKey = companyScopedKey("erpBillingSettings");
+      const savedCompany = JSON.parse(localStorage.getItem(companySettingsKey) || "null");
+      const savedGlobal = JSON.parse(localStorage.getItem("erpBillingSettings") || "null");
+
+      if (savedCompany) return { ...defaultSettings, ...savedCompany };
+      if (savedGlobal) return { ...defaultSettings, ...savedGlobal };
+      return defaultSettings;
+    }
+
+    function applyCompanySettingsPreview() {
+      const s = getErpSettings();
+
+      document.getElementById("previewCompanyName").textContent = s.company_name || "-";
+      document.getElementById("previewCompanyGstin").textContent = s.gstin || "-";
+      document.getElementById("previewCompanyUpi").textContent = s.upi_id || "-";
+      document.getElementById("previewCompanyUpiName").textContent = s.upi_name || "-";
+
+      const rateInput = document.getElementById("billRatePerGram");
+      const mcInput = document.getElementById("billMcRate");
+
+      if (rateInput && !rateInput.value && s.default_rate_per_gram !== undefined && s.default_rate_per_gram !== "") {
+        rateInput.value = s.default_rate_per_gram;
+      }
+
+      if (mcInput && !mcInput.value && s.default_mc_rate !== undefined && s.default_mc_rate !== "") {
+        mcInput.value = s.default_mc_rate;
+      }
     }
 
     function num(value) {
@@ -560,11 +641,11 @@
     }
 
     function saveBillingItems() {
-      localStorage.setItem("billingItems", JSON.stringify(billingItems));
+      localStorage.setItem(companyScopedKey("billingItems"), JSON.stringify(billingItems));
     }
 
     function saveRemovedBillingBarcodes() {
-      localStorage.setItem("removedBillingBarcodes", JSON.stringify(removedBillingBarcodes));
+      localStorage.setItem(companyScopedKey("removedBillingBarcodes"), JSON.stringify(removedBillingBarcodes));
     }
 
     function getTodayDate() {
@@ -598,7 +679,8 @@
         size,
         lot,
         pureWeight: 0,
-        totalPrice: 0
+        totalPrice: 0,
+        company_id: getCurrentCompanyId()
       });
 
       renderBillingTable();
@@ -635,14 +717,22 @@
     }
 
     function loadItemsFromInvoice(showMessage = false) {
-      const processedItems = JSON.parse(localStorage.getItem("processedInvoiceItems")) || [];
+      const processedItems = JSON.parse(localStorage.getItem(companyScopedKey("processedInvoiceItems")) || "[]");
 
       if (!Array.isArray(processedItems) || !processedItems.length) {
         if (showMessage) alert("Invoice se koi item nahi mila");
         return;
       }
 
-      const filteredItems = processedItems.filter((item) => {
+      const currentCompanyId = getCurrentCompanyId();
+
+      const filteredCompanyItems = processedItems.filter((item) => {
+        const itemCompanyId = item?.company_id ?? item?.companyId ?? null;
+        if (isSuperAdmin()) return true;
+        return Number(itemCompanyId) === Number(currentCompanyId);
+      });
+
+      const filteredItems = filteredCompanyItems.filter((item) => {
         const barcode = String(item.barcode || "").trim();
         return !removedBillingBarcodes.includes(barcode);
       });
@@ -668,7 +758,8 @@
         size: item.size || "",
         lot: item.lot || "",
         pureWeight: 0,
-        totalPrice: 0
+        totalPrice: 0,
+        company_id: item.company_id ?? item.companyId ?? getCurrentCompanyId()
       }));
 
       const first = filteredItems[0] || {};
@@ -692,8 +783,8 @@
       renderBillingTable();
       calculateBillingTotal();
 
-      localStorage.removeItem("billingItems");
-      localStorage.removeItem("removedBillingBarcodes");
+      localStorage.removeItem(companyScopedKey("billingItems"));
+      localStorage.removeItem(companyScopedKey("removedBillingBarcodes"));
 
       const ids = [
         "billCustomerName",
@@ -738,6 +829,7 @@
       if (dateInput) dateInput.value = getTodayDate();
 
       clearQrBox();
+      applyCompanySettingsPreview();
       updateQuickSummary();
       handlePaymentModeChange();
     }
@@ -915,7 +1007,6 @@
       const mode = document.getElementById("billPaymentMode").value;
 
       const paid = num(paidEl.value);
-      const due = num(dueEl.value);
 
       if (mode === "Cash" || mode === "Online") {
         if (paid >= grandTotal && grandTotal > 0) {
@@ -1070,7 +1161,7 @@
       const status = document.getElementById("billPaymentStatus").value || "";
       const grandTotal = document.getElementById("billGrandTotal").value || "0";
       const paidAmount = document.getElementById("billPaidAmount").value || "0";
-      return `AUTO_PRINT_${invoiceNo}_${mode}_${status}_${grandTotal}_${paidAmount}`;
+      return companyScopedKey(`AUTO_PRINT_${invoiceNo}_${mode}_${status}_${grandTotal}_${paidAmount}`);
     }
 
     function maybeAutoFinalize() {
@@ -1161,13 +1252,14 @@
         metalPayable,
         metalNote,
         companySettings: erpSettings,
+        company_id: getCurrentCompanyId(),
         savedAt: new Date().toLocaleString(),
         source: "billing"
       };
     }
 
     function saveRecordToHistoryArray(key, record) {
-      const oldData = JSON.parse(localStorage.getItem(key)) || [];
+      const oldData = JSON.parse(localStorage.getItem(key) || "[]");
       const list = Array.isArray(oldData) ? oldData : [];
       const index = list.findIndex((item) => String(item.id || "") === String(record.id || ""));
 
@@ -1187,8 +1279,9 @@
       }
 
       const record = getBillingRecord();
-      saveRecordToHistoryArray("billingHistory", record);
-      saveRecordToHistoryArray("salesHistory", {
+
+      saveRecordToHistoryArray(companyScopedKey("billingHistory"), record);
+      saveRecordToHistoryArray(companyScopedKey("salesHistory"), {
         ...record,
         historyType: "billing_saved"
       });
@@ -1462,15 +1555,16 @@
         dateInput.value = getTodayDate();
       }
 
-      const savedBillingItems = JSON.parse(localStorage.getItem("billingItems")) || [];
+      const savedBillingItems = JSON.parse(localStorage.getItem(companyScopedKey("billingItems")) || "[]");
       billingItems = Array.isArray(savedBillingItems) ? savedBillingItems : [];
 
-      removedBillingBarcodes = JSON.parse(localStorage.getItem("removedBillingBarcodes")) || [];
+      removedBillingBarcodes = JSON.parse(localStorage.getItem(companyScopedKey("removedBillingBarcodes")) || "[]");
       if (!Array.isArray(removedBillingBarcodes)) {
         removedBillingBarcodes = [];
       }
 
       renderBillingTable();
+      applyCompanySettingsPreview();
       calculateBillingTotal();
 
       if (!billingItems.length) {
@@ -1485,6 +1579,7 @@
 
       handlePaymentModeChange();
       updateQuickSummary();
+      generatePaymentQr();
     });
   </script>
 

@@ -426,6 +426,41 @@
     let dashboardStockData = [];
     let dashboardSalesData = null;
 
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function getItemCompanyId(item) {
+      const raw = item?.company_id ?? item?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function filterCompanyItems(items) {
+      if (isSuperAdmin()) return Array.isArray(items) ? items : [];
+
+      const currentCompanyId = getCurrentCompanyId();
+      return (Array.isArray(items) ? items : []).filter((item) => {
+        return getItemCompanyId(item) === currentCompanyId;
+      });
+    }
+
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       if (sidebar) {
@@ -491,7 +526,9 @@
         else if (status === "DAMAGE") map[lot].damage += 1;
       });
 
-      const rows = Object.values(map).sort((a, b) => Number(a.lot) - Number(b.lot));
+      const rows = Object.values(map).sort((a, b) =>
+        String(a.lot).localeCompare(String(b.lot), undefined, { numeric: true })
+      );
 
       if (!rows.length) {
         tbody.innerHTML = `<tr><td colspan="6" class="empty-text">No lot summary found</td></tr>`;
@@ -614,7 +651,7 @@
 
       const rows = [...dashboardStockData]
         .filter(item => getStatusType(item) === "IN_STOCK")
-        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+        .sort((a, b) => new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0))
         .slice(0, 8);
 
       if (!rows.length) {
@@ -640,9 +677,11 @@
       const tbody = document.getElementById("recentSalesBody");
       tbody.innerHTML = "";
 
-      const recentInvoices = Array.isArray(dashboardSalesData?.recentInvoices)
+      let recentInvoices = Array.isArray(dashboardSalesData?.recentInvoices)
         ? dashboardSalesData.recentInvoices
         : [];
+
+      recentInvoices = filterCompanyItems(recentInvoices);
 
       if (!recentInvoices.length) {
         tbody.innerHTML = `<tr><td colspan="4" class="empty-text">No recent sales found</td></tr>`;
@@ -652,10 +691,10 @@
       recentInvoices.slice(0, 8).forEach((item) => {
         tbody.innerHTML += `
           <tr>
-            <td>${safeText(item.invoice_no || item.invoiceNumber || "-")}</td>
+            <td>${safeText(item.invoice_number || item.invoice_no || item.invoiceNumber || "-")}</td>
             <td>${safeText(item.customer_name || item.customerName || "-")}</td>
             <td>₹ ${Number(item.total_amount || item.total || 0).toFixed(2)}</td>
-            <td>${safeText(item.date || item.created_at || "-")}</td>
+            <td>${safeText(item.invoice_date || item.date || item.created_at || "-")}</td>
           </tr>
         `;
       });
@@ -663,9 +702,19 @@
 
     async function loadDashboardData() {
       try {
-        const stockRes = await fetch(`${API_BASE}/getStock`, { cache: "no-store" });
+        const companyId = getCurrentCompanyId();
+
+        const stockUrl = companyId !== null && !isSuperAdmin()
+          ? `${API_BASE}/getStock?companyId=${encodeURIComponent(companyId)}`
+          : `${API_BASE}/getStock`;
+
+        const salesUrl = companyId !== null && !isSuperAdmin()
+          ? `${API_BASE}/api/dashboard?companyId=${encodeURIComponent(companyId)}`
+          : `${API_BASE}/api/dashboard`;
+
+        const stockRes = await fetch(stockUrl, { cache: "no-store" });
         const stockData = await stockRes.json();
-        dashboardStockData = Array.isArray(stockData) ? stockData : [];
+        dashboardStockData = filterCompanyItems(Array.isArray(stockData) ? stockData : []);
 
         let inStock = 0;
         let sold = 0;
@@ -689,7 +738,7 @@
         document.getElementById("damagedReturnCount").textContent = damagedReturn;
         document.getElementById("totalWeightTop").textContent = totalWeight.toFixed(3) + " g";
 
-        const salesRes = await fetch(`${API_BASE}/api/dashboard`, { cache: "no-store" });
+        const salesRes = await fetch(salesUrl, { cache: "no-store" });
         const salesData = await salesRes.json();
         dashboardSalesData = salesData && salesData.success ? salesData : null;
 

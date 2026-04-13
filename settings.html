@@ -45,7 +45,8 @@
     }
 
     .input-box input,
-    .input-box textarea {
+    .input-box textarea,
+    .input-box select {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid #cbd5e1;
@@ -135,6 +136,22 @@
       font-size: 14px;
       line-height: 1.8;
     }
+
+    .company-box {
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .muted-text {
+      color: #64748b;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -173,7 +190,7 @@
 
           <div class="title">
             <h1>ERP Settings</h1>
-            <p>Billing print aur QR customization</p>
+            <p>Billing print, QR, invoice auto settings, subscription setup</p>
           </div>
         </div>
       </div>
@@ -181,6 +198,12 @@
       <section class="settings-page">
         <div class="settings-card">
           <div id="settingsLockStatus" class="locked-chip">Locked</div>
+
+          <div class="company-box">
+            Current Company:
+            <span id="currentCompanyLabel">Not Found</span>
+            <div class="muted-text" id="currentCompanySubLabel"></div>
+          </div>
 
           <h3>Verification</h3>
 
@@ -203,7 +226,8 @@
 
           <div class="info-box">
             Settings save karne se pehle unlock karna zaroori hai.
-            Abhi ye beginner version me <strong>step code verification</strong> se chalega.
+            Ye settings ab <strong>company-wise</strong> save hongi.
+            Super admin sab company ka data dekh sakta hai, normal admin sirf apni company ka.
           </div>
         </div>
 
@@ -267,12 +291,91 @@
             Preview yahan dikhega...
           </div>
         </div>
+
+        <div class="settings-card">
+          <h3>Invoice Auto Settings</h3>
+
+          <div class="settings-form-grid">
+            <div class="input-box">
+              <label>Business State</label>
+              <input type="text" id="business_state" placeholder="Odisha" />
+            </div>
+
+            <div class="input-box">
+              <label>Default Bill Type</label>
+              <select id="default_bill_type">
+                <option value="GST">GST</option>
+                <option value="NON_GST">NON_GST</option>
+              </select>
+            </div>
+
+            <div class="input-box">
+              <label>Default Tax Type</label>
+              <select id="default_tax_type">
+                <option value="CGST_SGST">CGST + SGST</option>
+                <option value="IGST">IGST</option>
+              </select>
+            </div>
+
+            <div class="input-box">
+              <label>Default Rate Per Gram</label>
+              <input type="number" id="default_rate_per_gram" placeholder="0" />
+            </div>
+
+            <div class="input-box">
+              <label>Default MC Per Gram</label>
+              <input type="number" id="default_mc_rate" placeholder="0" />
+            </div>
+          </div>
+
+          <div class="info-box">
+            Isse billing/invoice page me values auto fill ho sakti hain.
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>Subscription Settings</h3>
+
+          <div class="settings-form-grid">
+            <div class="input-box">
+              <label>Plan Name</label>
+              <select id="subscription_plan">
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+
+            <div class="input-box">
+              <label>Subscription Status</label>
+              <select id="subscription_status">
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+                <option value="trial">Trial</option>
+                <option value="blocked">Blocked</option>
+              </select>
+            </div>
+
+            <div class="input-box">
+              <label>Start Date</label>
+              <input type="date" id="subscription_start_date" />
+            </div>
+
+            <div class="input-box">
+              <label>End Date</label>
+              <input type="date" id="subscription_end_date" />
+            </div>
+          </div>
+
+          <div class="info-box">
+            Aage future me feature lock/unlock ke liye ye kaam aayega.
+            Jaise: basic user ko limited features, premium user ko full features.
+          </div>
+        </div>
       </section>
     </main>
   </div>
 
   <script>
-    const ERP_SETTINGS_KEY = "erpBillingSettings";
     const ERP_UNLOCK_KEY = "erpSettingsUnlocked";
     const OWNER_STEP_CODE = "RPJ2026";
 
@@ -286,7 +389,16 @@
       address: "baulakud 42mauza cuttack-754112, Odisha",
       declaration: "Declaration : Subject to JHINKIRIA ,42 MOUJA,CUTTACK-112 Jurisdiction only.",
       upi_id: "yourupi@okaxis",
-      upi_name: "RAJPATI ENTERPRISE"
+      upi_name: "RAJPATI ENTERPRISE",
+      business_state: "Odisha",
+      default_bill_type: "GST",
+      default_tax_type: "CGST_SGST",
+      default_rate_per_gram: 0,
+      default_mc_rate: 0,
+      subscription_plan: "basic",
+      subscription_status: "active",
+      subscription_start_date: "",
+      subscription_end_date: ""
     };
 
     function toggleSidebar() {
@@ -294,9 +406,55 @@
       if (sidebar) sidebar.classList.toggle("collapsed");
     }
 
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function getSettingsStorageKey() {
+      const companyId = getCurrentCompanyId();
+      const scope = isSuperAdmin() ? "superadmin" : (companyId ?? "no_company");
+      return `erpBillingSettings_${scope}`;
+    }
+
     function getSavedSettings() {
-      const saved = JSON.parse(localStorage.getItem(ERP_SETTINGS_KEY));
+      const key = getSettingsStorageKey();
+      const saved = JSON.parse(localStorage.getItem(key));
       return saved ? { ...defaultSettings, ...saved } : { ...defaultSettings };
+    }
+
+    function updateCompanyLabel() {
+      const user = getLoggedInUser();
+      const companyId = getCurrentCompanyId();
+      const label = document.getElementById("currentCompanyLabel");
+      const sub = document.getElementById("currentCompanySubLabel");
+
+      if (!label || !sub) return;
+
+      if (isSuperAdmin()) {
+        label.textContent = "Super Admin Mode";
+        sub.textContent = "Aap global settings ya superadmin scoped settings dekh rahe ho.";
+        return;
+      }
+
+      label.textContent = companyId !== null ? `Company ID: ${companyId}` : "No Company Assigned";
+      sub.textContent = `Logged in as: ${user?.name || "-"} (${user?.email || "-"})`;
     }
 
     function updateLockUI() {
@@ -321,12 +479,22 @@
         "address",
         "declaration",
         "upi_id",
-        "upi_name"
+        "upi_name",
+        "business_state",
+        "default_bill_type",
+        "default_tax_type",
+        "default_rate_per_gram",
+        "default_mc_rate",
+        "subscription_plan",
+        "subscription_status",
+        "subscription_start_date",
+        "subscription_end_date"
       ];
 
       fieldIds.forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
+
         if (id === "ownerEmail") {
           el.disabled = false;
         } else {
@@ -334,7 +502,8 @@
         }
       });
 
-      document.getElementById("settingsStepCode").disabled = false;
+      const step = document.getElementById("settingsStepCode");
+      if (step) step.disabled = false;
     }
 
     function unlockSettings() {
@@ -375,6 +544,15 @@
       document.getElementById("declaration").value = settings.declaration || "";
       document.getElementById("upi_id").value = settings.upi_id || "";
       document.getElementById("upi_name").value = settings.upi_name || "";
+      document.getElementById("business_state").value = settings.business_state || "";
+      document.getElementById("default_bill_type").value = settings.default_bill_type || "GST";
+      document.getElementById("default_tax_type").value = settings.default_tax_type || "CGST_SGST";
+      document.getElementById("default_rate_per_gram").value = settings.default_rate_per_gram || 0;
+      document.getElementById("default_mc_rate").value = settings.default_mc_rate || 0;
+      document.getElementById("subscription_plan").value = settings.subscription_plan || "basic";
+      document.getElementById("subscription_status").value = settings.subscription_status || "active";
+      document.getElementById("subscription_start_date").value = settings.subscription_start_date || "";
+      document.getElementById("subscription_end_date").value = settings.subscription_end_date || "";
 
       renderPreview();
     }
@@ -390,7 +568,16 @@
         address: document.getElementById("address").value.trim(),
         declaration: document.getElementById("declaration").value.trim(),
         upi_id: document.getElementById("upi_id").value.trim(),
-        upi_name: document.getElementById("upi_name").value.trim()
+        upi_name: document.getElementById("upi_name").value.trim(),
+        business_state: document.getElementById("business_state").value.trim(),
+        default_bill_type: document.getElementById("default_bill_type").value,
+        default_tax_type: document.getElementById("default_tax_type").value,
+        default_rate_per_gram: Number(document.getElementById("default_rate_per_gram").value || 0),
+        default_mc_rate: Number(document.getElementById("default_mc_rate").value || 0),
+        subscription_plan: document.getElementById("subscription_plan").value,
+        subscription_status: document.getElementById("subscription_status").value,
+        subscription_start_date: document.getElementById("subscription_start_date").value,
+        subscription_end_date: document.getElementById("subscription_end_date").value
       };
     }
 
@@ -409,7 +596,8 @@
         return;
       }
 
-      localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(settings));
+      const key = getSettingsStorageKey();
+      localStorage.setItem(key, JSON.stringify(settings));
       renderPreview();
       alert("Settings save ho gaya");
       lockSettings();
@@ -423,7 +611,8 @@
         return;
       }
 
-      localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+      const key = getSettingsStorageKey();
+      localStorage.setItem(key, JSON.stringify(defaultSettings));
       loadSettingsToForm();
       alert("Default settings restore ho gaya");
     }
@@ -440,6 +629,12 @@
         IFSC: ${s.ifsc || "-"}<br>
         Address: ${s.address || "-"}<br>
         UPI: ${s.upi_id || "-"} (${s.upi_name || "-"})<br>
+        Default Bill Type: ${s.default_bill_type || "-"}<br>
+        Default Tax Type: ${s.default_tax_type || "-"}<br>
+        Rate/Gram: ${Number(s.default_rate_per_gram || 0).toFixed(2)}<br>
+        MC/Gram: ${Number(s.default_mc_rate || 0).toFixed(2)}<br>
+        Plan: ${s.subscription_plan || "-"}<br>
+        Subscription Status: ${s.subscription_status || "-"}<br>
         Declaration: ${s.declaration || "-"}
       `;
     }
@@ -454,21 +649,26 @@
       "address",
       "declaration",
       "upi_id",
-      "upi_name"
+      "upi_name",
+      "business_state",
+      "default_bill_type",
+      "default_tax_type",
+      "default_rate_per_gram",
+      "default_mc_rate",
+      "subscription_plan",
+      "subscription_status",
+      "subscription_start_date",
+      "subscription_end_date"
     ].forEach((id) => {
       window.addEventListener("load", () => {
         const el = document.getElementById(id);
-        if (el) {
-          el.addEventListener("input", renderPreview);
-        }
+        if (el) el.addEventListener("input", renderPreview);
+        if (el && el.tagName === "SELECT") el.addEventListener("change", renderPreview);
       });
     });
 
     window.addEventListener("load", function () {
-      if (!localStorage.getItem(ERP_SETTINGS_KEY)) {
-        localStorage.setItem(ERP_SETTINGS_KEY, JSON.stringify(defaultSettings));
-      }
-
+      updateCompanyLabel();
       loadSettingsToForm();
       updateLockUI();
     });

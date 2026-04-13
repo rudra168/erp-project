@@ -42,10 +42,96 @@ function format3(value) {
   return isNaN(n) ? "0.000" : n.toFixed(3);
 }
 
+function num(value) {
+  const n = Number(value || 0);
+  return isNaN(n) ? 0 : n;
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeStatus(value, fallback = "") {
+  return String(value || fallback).trim().toUpperCase();
+}
+
+function getRequestedCompanyId(req) {
+  const raw =
+    req.query.companyId ??
+    req.body.companyId ??
+    req.params.companyId ??
+    null;
+
+  if (raw === null || raw === undefined || raw === "") return null;
+
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function isSuperAdminUser(user = {}) {
+  const role = String(user.role || "").trim().toLowerCase();
+  const email = normalizeEmail(user.email || "");
+  return role === "superadmin" || email === "grudrapratap0@gmail.com";
+}
+
 async function testDbConnection() {
   const conn = await pool.getConnection();
   await conn.ping();
   conn.release();
+}
+
+async function findUserByEmailAndPassword(email, password) {
+  const [rows] = await pool.query(
+    `
+    SELECT 
+      u.*,
+      c.company_name,
+      c.owner_name AS company_owner_name,
+      c.owner_email AS company_owner_email,
+      c.status AS company_status
+    FROM users u
+    LEFT JOIN companies c ON c.id = u.company_id
+    WHERE u.email = ? AND u.password = ?
+    LIMIT 1
+    `,
+    [email, password]
+  );
+
+  return rows.length ? rows[0] : null;
+}
+
+async function ensureSuperAdminExists() {
+  try {
+    const superAdminEmail = "grudrapratap0@gmail.com";
+
+    const [rows] = await pool.query(
+      `SELECT id FROM users WHERE email = ? LIMIT 1`,
+      [superAdminEmail]
+    );
+
+    if (rows.length > 0) return;
+
+    await pool.query(
+      `
+      INSERT INTO users
+      (name, mobile, email, password, role, status, company_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        "Super Admin",
+        "",
+        superAdminEmail,
+        "1234",
+        "SuperAdmin",
+        "approved",
+        null
+      ]
+    );
+
+    console.log("Default SuperAdmin created ✅");
+  } catch (error) {
+    console.error("SuperAdmin create error:", error);
+  }
 }
 
 /* =========================
@@ -86,38 +172,70 @@ app.get("/health", async (req, res) => {
 ========================= */
 app.get("/api/dashboard", async (req, res) => {
   try {
-    const [stockSummary] = await pool.query(`
+    const companyId = getRequestedCompanyId(req);
+
+    let stockWhere = "";
+    let salesWhere = "";
+    const stockParams = [];
+    const salesParams = [];
+
+    if (companyId !== null) {
+      stockWhere = "WHERE company_id = ?";
+      salesWhere = "WHERE company_id = ?";
+      stockParams.push(companyId);
+      salesParams.push(companyId);
+    }
+
+    const [stockSummary] = await pool.query(
+      `
       SELECT 
         COUNT(*) AS total_items,
         COALESCE(SUM(weight), 0) AS total_weight
       FROM stock
-    `);
+      ${stockWhere}
+      `,
+      stockParams
+    );
 
-    const [soldSummary] = await pool.query(`
+    const [soldSummary] = await pool.query(
+      `
       SELECT COUNT(*) AS sold_items
       FROM stock
-      WHERE status = 'SOLD'
-    `);
+      ${companyId !== null ? "WHERE company_id = ? AND status = 'SOLD'" : "WHERE status = 'SOLD'"}
+      `,
+      companyId !== null ? [companyId] : []
+    );
 
-    const [inStockSummary] = await pool.query(`
+    const [inStockSummary] = await pool.query(
+      `
       SELECT COUNT(*) AS in_stock_items
       FROM stock
-      WHERE status = 'IN_STOCK'
-    `);
+      ${companyId !== null ? "WHERE company_id = ? AND status = 'IN_STOCK'" : "WHERE status = 'IN_STOCK'"}
+      `,
+      companyId !== null ? [companyId] : []
+    );
 
-    const [salesSummary] = await pool.query(`
+    const [salesSummary] = await pool.query(
+      `
       SELECT 
         COUNT(*) AS total_sales,
         COALESCE(SUM(total_amount), 0) AS total_sales_amount
       FROM sales_history
-    `);
+      ${salesWhere}
+      `,
+      salesParams
+    );
 
-    const [recentInvoices] = await pool.query(`
-      SELECT invoice_number, customer_name, total_amount, created_at
+    const [recentInvoices] = await pool.query(
+      `
+      SELECT invoice_number, customer_name, total_amount, invoice_date, created_at, company_id
       FROM sales_history
+      ${salesWhere}
       ORDER BY id DESC
-      LIMIT 5
-    `);
+      LIMIT 8
+      `,
+      salesParams
+    );
 
     return res.json({
       success: true,
@@ -140,14 +258,23 @@ app.get("/api/dashboard", async (req, res) => {
 ========================= */
 app.get("/getStock", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    const companyId = getRequestedCompanyId(req);
+
+    const whereClause = companyId !== null ? "WHERE company_id = ?" : "";
+    const params = companyId !== null ? [companyId] : [];
+
+    const [rows] = await pool.query(
+      `
       SELECT *
       FROM stock
+      ${whereClause}
       ORDER BY
         CAST(COALESCE(lot_number, '0') AS UNSIGNED) ASC,
         CAST(COALESCE(serial, '0') AS UNSIGNED) ASC,
         id ASC
-    `);
+      `,
+      params
+    );
 
     return res.json(rows);
   } catch (error) {
@@ -162,10 +289,17 @@ app.get("/getStock", async (req, res) => {
 app.get("/getSticker/:barcode", async (req, res) => {
   try {
     const barcode = String(req.params.barcode || "").trim();
+    const companyId = getRequestedCompanyId(req);
 
     const [rows] = await pool.query(
-      `SELECT * FROM stock WHERE barcode = ? LIMIT 1`,
-      [barcode]
+      `
+      SELECT *
+      FROM stock
+      WHERE barcode = ?
+      ${companyId !== null ? "AND company_id = ?" : ""}
+      LIMIT 1
+      `,
+      companyId !== null ? [barcode, companyId] : [barcode]
     );
 
     if (!rows.length) {
@@ -201,13 +335,25 @@ app.post("/addSticker", async (req, res) => {
       lot,
       metalType,
       processType,
-      barcode
+      barcode,
+      companyId
     } = req.body;
+
+    const finalCompanyId = companyId === null || companyId === undefined || companyId === ""
+      ? null
+      : Number(companyId);
 
     if (!serial || !productName || !purity || !sku || !size || !weight || !lot || !barcode) {
       return res.json({
         success: false,
         message: "Serial, Product, Purity, SKU, Size, Weight, Lot aur Barcode required hai"
+      });
+    }
+
+    if (finalCompanyId === null || Number.isNaN(finalCompanyId)) {
+      return res.json({
+        success: false,
+        message: "companyId required hai"
       });
     }
 
@@ -220,10 +366,11 @@ app.post("/addSticker", async (req, res) => {
       SELECT id FROM stock
       WHERE lot_number = ?
         AND serial = ?
+        AND company_id = ?
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [cleanLot, cleanSerial]
+      [cleanLot, cleanSerial, finalCompanyId]
     );
 
     if (dupLotSerial.length > 0) {
@@ -237,10 +384,11 @@ app.post("/addSticker", async (req, res) => {
       `
       SELECT id FROM stock
       WHERE barcode = ?
+        AND company_id = ?
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [cleanBarcode]
+      [cleanBarcode, finalCompanyId]
     );
 
     if (dupBarcode.length > 0) {
@@ -264,8 +412,9 @@ app.post("/addSticker", async (req, res) => {
         barcode,
         metal_type,
         process_type,
-        status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        status,
+        company_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         cleanSerial,
@@ -279,7 +428,8 @@ app.post("/addSticker", async (req, res) => {
         cleanBarcode,
         String(metalType || "").trim(),
         String(processType || "").trim(),
-        "IN_STOCK"
+        "IN_STOCK",
+        finalCompanyId
       ]
     );
 
@@ -313,8 +463,14 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       metalType = "",
       processType = "",
       qty = 1,
-      status = "IN_STOCK"
+      status = "IN_STOCK",
+      companyId = null
     } = req.body;
+
+    const finalCompanyId =
+      companyId === null || companyId === undefined || companyId === ""
+        ? null
+        : Number(companyId);
 
     if (!oldBarcode) {
       return res.json({ success: false, message: "Old barcode missing hai" });
@@ -327,13 +483,25 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       });
     }
 
+    if (finalCompanyId === null || Number.isNaN(finalCompanyId)) {
+      return res.json({
+        success: false,
+        message: "companyId required hai"
+      });
+    }
+
     const cleanLot = String(lot).trim();
     const cleanSerial = String(serial).trim();
     const newBarcode = String(barcode || oldBarcode).trim();
 
     const [currentRows] = await pool.query(
-      `SELECT id FROM stock WHERE barcode = ? LIMIT 1`,
-      [oldBarcode]
+      `
+      SELECT id
+      FROM stock
+      WHERE barcode = ? AND company_id = ?
+      LIMIT 1
+      `,
+      [oldBarcode, finalCompanyId]
     );
 
     if (currentRows.length === 0) {
@@ -347,11 +515,12 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       SELECT id FROM stock
       WHERE lot_number = ?
         AND serial = ?
+        AND company_id = ?
         AND id <> ?
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [cleanLot, cleanSerial, currentId]
+      [cleanLot, cleanSerial, finalCompanyId, currentId]
     );
 
     if (dupLotSerial.length > 0) {
@@ -365,11 +534,12 @@ app.put("/updateSticker/:barcode", async (req, res) => {
       `
       SELECT id FROM stock
       WHERE barcode = ?
+        AND company_id = ?
         AND id <> ?
         AND UPPER(COALESCE(status, 'IN_STOCK')) = 'IN_STOCK'
       LIMIT 1
       `,
-      [newBarcode, currentId]
+      [newBarcode, finalCompanyId, currentId]
     );
 
     if (dupBarcode.length > 0) {
@@ -432,8 +602,16 @@ app.put("/updateSticker/:barcode", async (req, res) => {
 app.delete("/deleteSticker/:barcode", async (req, res) => {
   try {
     const barcode = String(req.params.barcode || "").trim();
+    const companyId = getRequestedCompanyId(req);
 
-    await pool.query(`DELETE FROM stock WHERE barcode = ?`, [barcode]);
+    if (companyId === null) {
+      return res.json({ success: false, message: "companyId required hai" });
+    }
+
+    await pool.query(
+      `DELETE FROM stock WHERE barcode = ? AND company_id = ?`,
+      [barcode, companyId]
+    );
 
     return res.json({
       success: true,
@@ -451,10 +629,15 @@ app.delete("/deleteSticker/:barcode", async (req, res) => {
 app.put("/restoreSticker/:barcode", async (req, res) => {
   try {
     const barcode = String(req.params.barcode || "").trim();
+    const companyId = getRequestedCompanyId(req);
+
+    if (companyId === null) {
+      return res.json({ success: false, message: "companyId required hai" });
+    }
 
     await pool.query(
-      `UPDATE stock SET status = 'IN_STOCK' WHERE barcode = ?`,
-      [barcode]
+      `UPDATE stock SET status = 'IN_STOCK' WHERE barcode = ? AND company_id = ?`,
+      [barcode, companyId]
     );
 
     return res.json({ success: true, message: "Sticker restored" });
@@ -489,8 +672,14 @@ app.post("/saveInvoice", async (req, res) => {
       roundOff = 0,
       subtotal = 0,
       grandTotal = 0,
-      items = []
+      items = [],
+      companyId = null
     } = req.body;
+
+    const finalCompanyId =
+      companyId === null || companyId === undefined || companyId === ""
+        ? null
+        : Number(companyId);
 
     if (!invoiceNumber || !items.length) {
       await connection.rollback();
@@ -500,15 +689,23 @@ app.post("/saveInvoice", async (req, res) => {
       });
     }
 
+    if (finalCompanyId === null || Number.isNaN(finalCompanyId)) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "companyId required hai"
+      });
+    }
+
     const [saleInsert] = await connection.query(
       `
       INSERT INTO sales_history
       (
         invoice_number, customer_name, mobile, gst_number, invoice_date,
         payment_mode, payment_status, paid_amount, due_amount,
-        rate_per_gram, mc_rate, round_off, subtotal, total_amount, created_at
+        rate_per_gram, mc_rate, round_off, subtotal, total_amount, created_at, company_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
       `,
       [
         invoiceNumber,
@@ -524,7 +721,8 @@ app.post("/saveInvoice", async (req, res) => {
         Number(mcRate || 0),
         Number(roundOff || 0),
         Number(subtotal || 0),
-        Number(grandTotal || 0)
+        Number(grandTotal || 0),
+        finalCompanyId
       ]
     );
 
@@ -537,28 +735,31 @@ app.post("/saveInvoice", async (req, res) => {
         `
         INSERT INTO sales_items
         (
-          sale_id, invoice_number, barcode, product_name, sku, purity, size, weight, lot_number, customer_name, created_at
+          sale_id, invoice_number, barcode, product_name, sku, purity, size, weight, lot_number, customer_name, created_at, company_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
         `,
         [
           saleId,
           invoiceNumber,
           barcode,
-          item.productName || "",
+          item.productName || item.product_name || "",
           item.sku || "",
           item.purity || "",
           item.size || "",
           Number(item.weight || 0),
-          item.lot || "",
-          customerName
+          item.lot || item.lot_number || "",
+          customerName,
+          finalCompanyId
         ]
       );
 
-      await connection.query(
-        `UPDATE stock SET status = 'SOLD' WHERE barcode = ?`,
-        [barcode]
-      );
+      if (barcode) {
+        await connection.query(
+          `UPDATE stock SET status = 'SOLD' WHERE barcode = ? AND company_id = ?`,
+          [barcode, finalCompanyId]
+        );
+      }
     }
 
     await connection.commit();
@@ -585,13 +786,19 @@ app.post("/saveInvoice", async (req, res) => {
 ========================= */
 app.get("/getSalesHistory", async (req, res) => {
   try {
-    const [sales] = await pool.query(`
+    const companyId = getRequestedCompanyId(req);
+
+    const [sales] = await pool.query(
+      `
       SELECT 
         sh.*,
         (SELECT COUNT(*) FROM sales_items si WHERE si.sale_id = sh.id) AS total_items
       FROM sales_history sh
+      ${companyId !== null ? "WHERE sh.company_id = ?" : ""}
       ORDER BY sh.id DESC
-    `);
+      `,
+      companyId !== null ? [companyId] : []
+    );
 
     return res.json({
       success: true,
@@ -605,13 +812,19 @@ app.get("/getSalesHistory", async (req, res) => {
 
 app.get("/sales-history", async (req, res) => {
   try {
-    const [sales] = await pool.query(`
+    const companyId = getRequestedCompanyId(req);
+
+    const [sales] = await pool.query(
+      `
       SELECT 
         sh.*,
         (SELECT COUNT(*) FROM sales_items si WHERE si.sale_id = sh.id) AS total_items
       FROM sales_history sh
+      ${companyId !== null ? "WHERE sh.company_id = ?" : ""}
       ORDER BY sh.id DESC
-    `);
+      `,
+      companyId !== null ? [companyId] : []
+    );
 
     return res.json(sales);
   } catch (error) {
@@ -626,15 +839,17 @@ app.get("/sales-history", async (req, res) => {
 app.get("/getInvoiceItems/:invoiceNumber", async (req, res) => {
   try {
     const invoiceNumber = String(req.params.invoiceNumber || "").trim();
+    const companyId = getRequestedCompanyId(req);
 
     const [items] = await pool.query(
       `
       SELECT *
       FROM sales_items
       WHERE invoice_number = ?
+      ${companyId !== null ? "AND company_id = ?" : ""}
       ORDER BY id DESC
       `,
-      [invoiceNumber]
+      companyId !== null ? [invoiceNumber, companyId] : [invoiceNumber]
     );
 
     return res.json({
@@ -653,10 +868,15 @@ app.get("/getInvoiceItems/:invoiceNumber", async (req, res) => {
 app.put("/returnItem/:barcode", async (req, res) => {
   try {
     const barcode = String(req.params.barcode || "").trim();
+    const companyId = getRequestedCompanyId(req);
+
+    if (companyId === null) {
+      return res.json({ success: false, message: "companyId required hai" });
+    }
 
     await pool.query(
-      `UPDATE stock SET status = 'IN_STOCK' WHERE barcode = ?`,
-      [barcode]
+      `UPDATE stock SET status = 'IN_STOCK' WHERE barcode = ? AND company_id = ?`,
+      [barcode, companyId]
     );
 
     return res.json({
@@ -677,13 +897,15 @@ app.post("/requestCompanySignup", async (req, res) => {
     const {
       companyName = "",
       ownerName = "",
+      mobile = "",
       email = "",
       password = ""
     } = req.body;
 
     const cleanCompanyName = String(companyName).trim();
     const cleanOwnerName = String(ownerName).trim();
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanMobile = String(mobile).trim();
+    const cleanEmail = normalizeEmail(email);
     const cleanPassword = String(password).trim();
 
     if (!cleanCompanyName || !cleanOwnerName || !cleanEmail || !cleanPassword) {
@@ -694,7 +916,13 @@ app.post("/requestCompanySignup", async (req, res) => {
     }
 
     const [existingRequest] = await pool.query(
-      `SELECT id FROM company_signup_requests WHERE owner_email = ? AND status = 'pending' LIMIT 1`,
+      `
+      SELECT id
+      FROM company_signup_requests
+      WHERE owner_email = ?
+        AND status = 'pending'
+      LIMIT 1
+      `,
       [cleanEmail]
     );
 
@@ -702,18 +930,6 @@ app.post("/requestCompanySignup", async (req, res) => {
       return res.json({
         success: false,
         message: "Ye signup request already pending hai"
-      });
-    }
-
-    const [existingApprovedRequest] = await pool.query(
-      `SELECT id FROM company_signup_requests WHERE owner_email = ? AND status = 'approved' LIMIT 1`,
-      [cleanEmail]
-    );
-
-    if (existingApprovedRequest.length > 0) {
-      return res.json({
-        success: false,
-        message: "Ye email pehle se approved request me hai"
       });
     }
 
@@ -732,10 +948,10 @@ app.post("/requestCompanySignup", async (req, res) => {
     await pool.query(
       `
       INSERT INTO company_signup_requests
-      (company_name, owner_name, owner_email, password, status)
-      VALUES (?, ?, ?, ?, ?)
+      (company_name, owner_name, mobile, owner_email, password, status)
+      VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [cleanCompanyName, cleanOwnerName, cleanEmail, cleanPassword, "pending"]
+      [cleanCompanyName, cleanOwnerName, cleanMobile, cleanEmail, cleanPassword, "pending"]
     );
 
     return res.json({
@@ -843,8 +1059,8 @@ app.put("/approveCompanyRequest/:id", async (req, res) => {
 
     const [companyInsert] = await connection.query(
       `
-      INSERT INTO companies (company_name, owner_name, owner_email, status)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO companies (company_name, owner_name, owner_email, status, created_at)
+      VALUES (?, ?, ?, ?, NOW())
       `,
       [
         requestData.company_name,
@@ -854,35 +1070,39 @@ app.put("/approveCompanyRequest/:id", async (req, res) => {
       ]
     );
 
+    const companyId = companyInsert.insertId;
+
     await connection.query(
       `
-      INSERT INTO users (name, mobile, email, password, role, status)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO users (name, mobile, email, password, role, status, company_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
       `,
       [
         requestData.owner_name,
-        "",
+        requestData.mobile || "",
         requestData.owner_email,
         requestData.password,
         "Admin",
-        "approved"
+        "approved",
+        companyId
       ]
     );
 
     await connection.query(
       `
       UPDATE company_signup_requests
-      SET status = 'approved'
+      SET status = 'approved', approved_at = NOW(), company_id = ?
       WHERE id = ?
       `,
-      [requestId]
+      [companyId, requestId]
     );
 
     await connection.commit();
 
     return res.json({
       success: true,
-      message: "Company aur admin user successfully create ho gaya"
+      message: "Company aur admin user successfully create ho gaya",
+      companyId
     });
   } catch (error) {
     if (connection) {
@@ -935,7 +1155,7 @@ app.put("/rejectCompanyRequest/:id", async (req, res) => {
     await pool.query(
       `
       UPDATE company_signup_requests
-      SET status = 'rejected'
+      SET status = 'rejected', rejected_at = NOW()
       WHERE id = ?
       `,
       [requestId]
@@ -979,7 +1199,44 @@ app.get("/approvedCompanies", async (req, res) => {
 });
 
 /* =========================
-   REGISTER USER
+   COMPANY USERS
+========================= */
+app.get("/companyUsers", async (req, res) => {
+  try {
+    const companyId = getRequestedCompanyId(req);
+
+    if (companyId === null) {
+      return res.json({
+        success: false,
+        message: "companyId required hai"
+      });
+    }
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, mobile, email, role, status, company_id, created_at
+      FROM users
+      WHERE company_id = ?
+      ORDER BY id DESC
+      `,
+      [companyId]
+    );
+
+    return res.json({
+      success: true,
+      users: rows
+    });
+  } catch (error) {
+    console.error("Company users error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Company users fetch failed"
+    });
+  }
+});
+
+/* =========================
+   REGISTER USER (company staff)
 ========================= */
 app.post("/registerUser", async (req, res) => {
   try {
@@ -987,18 +1244,30 @@ app.post("/registerUser", async (req, res) => {
       name = "",
       mobile = "",
       email = "",
-      password = ""
+      password = "",
+      companyId = null
     } = req.body;
 
     const cleanName = String(name).trim();
     const cleanMobile = String(mobile).trim();
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanEmail = normalizeEmail(email);
     const cleanPassword = String(password).trim();
+    const finalCompanyId =
+      companyId === null || companyId === undefined || companyId === ""
+        ? null
+        : Number(companyId);
 
-    if (!cleanName || !cleanMobile || !cleanEmail || !cleanPassword) {
+    if (!cleanName || !cleanEmail || !cleanPassword) {
       return res.json({
         success: false,
-        message: "Name, mobile, email aur password required hai"
+        message: "Name, email aur password required hai"
+      });
+    }
+
+    if (finalCompanyId === null || Number.isNaN(finalCompanyId)) {
+      return res.json({
+        success: false,
+        message: "companyId required hai"
       });
     }
 
@@ -1016,10 +1285,10 @@ app.post("/registerUser", async (req, res) => {
 
     await pool.query(
       `
-      INSERT INTO users (name, mobile, email, password, role, status)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO users (name, mobile, email, password, role, status, company_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
       `,
-      [cleanName, cleanMobile, cleanEmail, cleanPassword, "", "pending"]
+      [cleanName, cleanMobile, cleanEmail, cleanPassword, "", "pending", finalCompanyId]
     );
 
     return res.json({
@@ -1040,12 +1309,18 @@ app.post("/registerUser", async (req, res) => {
 ========================= */
 app.get("/pendingUsers", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT id, name, mobile, email, role, status, created_at
+    const companyId = getRequestedCompanyId(req);
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, mobile, email, role, status, created_at, company_id
       FROM users
       WHERE status = 'pending'
+      ${companyId !== null ? "AND company_id = ?" : ""}
       ORDER BY id DESC
-    `);
+      `,
+      companyId !== null ? [companyId] : []
+    );
 
     return res.json({
       success: true,
@@ -1065,12 +1340,18 @@ app.get("/pendingUsers", async (req, res) => {
 ========================= */
 app.get("/approvedUsers", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT id, name, mobile, email, role, status, created_at
+    const companyId = getRequestedCompanyId(req);
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, name, mobile, email, role, status, created_at, company_id
       FROM users
       WHERE status = 'approved'
+      ${companyId !== null ? "AND company_id = ?" : ""}
       ORDER BY id DESC
-    `);
+      `,
+      companyId !== null ? [companyId] : []
+    );
 
     return res.json({
       success: true,
@@ -1187,27 +1468,73 @@ app.put("/rejectUser/:id", async (req, res) => {
 ========================= */
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const password = String(req.body.password || "").trim();
 
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE email = ? AND password = ?",
-      [email, password]
-    );
+    const user = await findUserByEmailAndPassword(email, password);
 
-    if (!rows.length) {
+    if (!user) {
       return res.json({ success: false, message: "Invalid login" });
     }
-
-    const user = rows[0];
 
     if (String(user.status || "").toLowerCase() !== "approved") {
       return res.json({ success: false, message: "Pending approval" });
     }
 
-    return res.json({ success: true, user });
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        mobile: user.mobile,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        company_id: user.company_id,
+        companyId: user.company_id,
+        company_name: user.company_name || "",
+        companyName: user.company_name || "",
+        company_status: user.company_status || ""
+      }
+    });
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* =========================
+   GET USER BY EMAIL
+========================= */
+app.get("/userByEmail", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.query.email);
+
+    if (!email) {
+      return res.json({ success: false, message: "email required hai" });
+    }
+
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        u.id, u.name, u.mobile, u.email, u.role, u.status, u.company_id, u.created_at,
+        c.company_name
+      FROM users u
+      LEFT JOIN companies c ON c.id = u.company_id
+      WHERE u.email = ?
+      LIMIT 1
+      `,
+      [email]
+    );
+
+    if (!rows.length) {
+      return res.json({ success: false, message: "User nahi mila" });
+    }
+
+    return res.json({ success: true, user: rows[0] });
+  } catch (error) {
+    console.error("User by email error:", error);
+    return res.status(500).json({ success: false, message: "Fetch failed" });
   }
 });
 
@@ -1236,9 +1563,14 @@ app.use((err, req, res, next) => {
 /* =========================
    START SERVER
 ========================= */
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", async () => {
   console.log(`Server running on port ${PORT}`);
-  testDbConnection()
-    .then(() => console.log("MySQL Connected ✅"))
-    .catch((error) => console.error("MySQL connection failed:", error));
+
+  try {
+    await testDbConnection();
+    console.log("MySQL Connected ✅");
+    await ensureSuperAdminExists();
+  } catch (error) {
+    console.error("MySQL connection failed:", error);
+  }
 });

@@ -399,6 +399,46 @@
     let lastAutoScannedValue = "";
     let lastAutoScanTime = 0;
 
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function getItemCompanyId(item) {
+      const raw = item?.company_id ?? item?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function companyScopedKey(baseKey) {
+      const companyId = getCurrentCompanyId();
+      const scope = isSuperAdmin() ? "superadmin" : (companyId ?? "no_company");
+      return `${baseKey}_${scope}`;
+    }
+
+    function filterCompanyItems(items) {
+      if (isSuperAdmin()) return Array.isArray(items) ? items : [];
+      const currentCompanyId = getCurrentCompanyId();
+      return (Array.isArray(items) ? items : []).filter((item) => {
+        return getItemCompanyId(item) === currentCompanyId;
+      });
+    }
+
     function num(value) {
       const n = Number(value || 0);
       return isNaN(n) ? 0 : n;
@@ -413,17 +453,22 @@
 
     async function loadFromServer() {
       try {
-        const res = await fetch(`${API_BASE}/getStock`, { cache: "no-store" });
+        const companyId = getCurrentCompanyId();
+        const url = companyId !== null && !isSuperAdmin()
+          ? `${API_BASE}/getStock?companyId=${encodeURIComponent(companyId)}`
+          : `${API_BASE}/getStock`;
+
+        const res = await fetch(url, { cache: "no-store" });
         const data = await res.json();
-        stockItems = Array.isArray(data) ? data : [];
+        stockItems = filterCompanyItems(Array.isArray(data) ? data : []);
       } catch (err) {
         console.log("Load stock error:", err);
       }
     }
 
     function saveInvoiceItems() {
-      localStorage.setItem("invoiceItems", JSON.stringify(invoiceItems));
-      localStorage.setItem("processedInvoiceItems", JSON.stringify(processedInvoiceItems));
+      localStorage.setItem(companyScopedKey("invoiceItems"), JSON.stringify(invoiceItems));
+      localStorage.setItem(companyScopedKey("processedInvoiceItems"), JSON.stringify(processedInvoiceItems));
     }
 
     function focusInvoiceScanner() {
@@ -596,7 +641,8 @@
         customerName,
         mobile,
         invoiceDate,
-        invoiceNumber
+        invoiceNumber,
+        company_id: getCurrentCompanyId()
       }));
 
       processedInvoiceItems = [...processedInvoiceItems, ...updatedItems];
@@ -613,7 +659,8 @@
         return;
       }
 
-      localStorage.setItem("processedInvoiceItems", JSON.stringify(processedInvoiceItems));
+      localStorage.setItem(companyScopedKey("billingItems"), JSON.stringify(processedInvoiceItems));
+      localStorage.setItem(companyScopedKey("processedInvoiceItems"), JSON.stringify(processedInvoiceItems));
       window.location.href = "billing.html";
     }
 
@@ -672,7 +719,8 @@
         customerName,
         mobile,
         invoiceDate,
-        invoiceNumber
+        invoiceNumber,
+        company_id: getCurrentCompanyId()
       };
 
       invoiceItems.push(invoiceItem);
@@ -731,7 +779,7 @@
         if (el) el.value = "";
       });
 
-      localStorage.removeItem("billingItems");
+      localStorage.removeItem(companyScopedKey("billingItems"));
       saveInvoiceItems();
       focusInvoiceScanner();
     }
@@ -925,8 +973,8 @@
     }
 
     window.addEventListener("load", function () {
-      const savedItems = JSON.parse(localStorage.getItem("invoiceItems")) || [];
-      const savedProcessedItems = JSON.parse(localStorage.getItem("processedInvoiceItems")) || [];
+      const savedItems = JSON.parse(localStorage.getItem(companyScopedKey("invoiceItems"))) || [];
+      const savedProcessedItems = JSON.parse(localStorage.getItem(companyScopedKey("processedInvoiceItems"))) || [];
 
       invoiceItems = Array.isArray(savedItems) ? savedItems : [];
       processedInvoiceItems = Array.isArray(savedProcessedItems) ? savedProcessedItems : [];

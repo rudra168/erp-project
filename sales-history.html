@@ -236,6 +236,33 @@
     const API_BASE = "https://erp-project-production-ba38.up.railway.app";
     let salesHistoryData = [];
 
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem("erpLoggedInUser")) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCurrentCompanyId() {
+      const user = getLoggedInUser();
+      const raw = user?.company_id ?? user?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function isSuperAdmin() {
+      const user = getLoggedInUser();
+      const role = String(user?.role || "").toLowerCase();
+      const email = String(user?.email || "").toLowerCase();
+      return role === "superadmin" || email === "grudrapratap0@gmail.com";
+    }
+
+    function companyScopedKey(baseKey) {
+      const companyId = getCurrentCompanyId();
+      const scope = isSuperAdmin() ? "superadmin" : (companyId ?? "no_company");
+      return `${baseKey}_${scope}`;
+    }
+
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       if (sidebar) {
@@ -256,12 +283,69 @@
       return params.get("view") || "";
     }
 
+    function getItemCompanyId(item) {
+      const raw = item?.company_id ?? item?.companyId ?? null;
+      return raw === null || raw === undefined || raw === "" ? null : Number(raw);
+    }
+
+    function filterCompanySales(items) {
+      if (isSuperAdmin()) return Array.isArray(items) ? items : [];
+
+      const currentCompanyId = getCurrentCompanyId();
+      return (Array.isArray(items) ? items : []).filter((item) => {
+        return getItemCompanyId(item) === currentCompanyId;
+      });
+    }
+
     async function loadSalesHistory() {
       try {
-        const response = await fetch(`${API_BASE}/sales-history`);
-        const data = await response.json();
+        const companyId = getCurrentCompanyId();
+        let apiData = [];
 
-        salesHistoryData = Array.isArray(data) ? data : [];
+        try {
+          const url = companyId !== null && !isSuperAdmin()
+            ? `${API_BASE}/sales-history?companyId=${encodeURIComponent(companyId)}`
+            : `${API_BASE}/sales-history`;
+
+          const response = await fetch(url, { cache: "no-store" });
+          const data = await response.json();
+          apiData = Array.isArray(data) ? data : [];
+        } catch (apiError) {
+          console.log("API sales history load fail:", apiError);
+          apiData = [];
+        }
+
+        const localBilling = JSON.parse(
+          localStorage.getItem(companyScopedKey("billingHistory")) || "[]"
+        );
+
+        const formattedLocal = (Array.isArray(localBilling) ? localBilling : []).map((item, index) => ({
+          id: item.id || index + 1,
+          invoice_number: item.invoiceNumber || "",
+          customer_name: item.customerName || "",
+          mobile: item.mobile || "",
+          gst_number: item.gstNo || "",
+          invoice_date: item.billDate || "",
+          payment_mode: item.paymentMode || "",
+          payment_status: item.paymentStatus || "",
+          paid_amount: Number(item.paidAmount || 0),
+          due_amount: Number(item.dueAmount || 0),
+          total_items: Number(item.totalCount || 0),
+          total_amount: Number(item.grandTotal || 0),
+          company_id: item.company_id ?? item.companyId ?? getCurrentCompanyId()
+        }));
+
+        const merged = [...formattedLocal, ...apiData];
+        const uniqueMap = new Map();
+
+        merged.forEach((item, index) => {
+          const invoiceKey = String(item.invoice_number || item.invoiceNumber || `NOINV-${index}`).trim();
+          if (!uniqueMap.has(invoiceKey)) {
+            uniqueMap.set(invoiceKey, item);
+          }
+        });
+
+        salesHistoryData = filterCompanySales(Array.from(uniqueMap.values()));
         renderSalesHistory();
       } catch (error) {
         console.error("Sales history load error", error);
@@ -311,11 +395,7 @@
         let statusMatch = true;
 
         if (filterStatus !== "ALL") {
-          if (filterStatus === "SOLD") {
-            statusMatch = true;
-          } else {
-            statusMatch = status === filterStatus;
-          }
+          statusMatch = status === filterStatus;
         }
 
         return searchMatch && statusMatch;
@@ -360,7 +440,7 @@
               <button
                 type="button"
                 class="mini-btn"
-                onclick="viewSaleItems('${invoiceNo}')"
+                onclick="viewSaleItems('${String(invoiceNo).replace(/'/g, "\\'")}')"
               >
                 View
               </button>
@@ -387,16 +467,49 @@
     async function viewSaleItems(invoiceNumber) {
       if (!invoiceNumber) return;
 
+      const tbody = document.getElementById("saleItemsModalBody");
+      tbody.innerHTML = "";
+
       try {
-        const res = await fetch(`${API_BASE}/getInvoiceItems/${encodeURIComponent(invoiceNumber)}`, {
-          cache: "no-store"
-        });
+        const localBilling = JSON.parse(
+          localStorage.getItem(companyScopedKey("billingHistory")) || "[]"
+        );
+
+        const localMatch = (Array.isArray(localBilling) ? localBilling : []).find(
+          (item) => String(item.invoiceNumber || "").trim() === String(invoiceNumber).trim()
+        );
+
+        if (localMatch && Array.isArray(localMatch.items) && localMatch.items.length) {
+          localMatch.items.forEach((item, index) => {
+            tbody.innerHTML += `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${item.itemName || item.product_name || item.productName || ""}</td>
+                <td>${item.sku || ""}</td>
+                <td>${Number(item.weight || 0).toFixed(3)}</td>
+                <td>${item.size || ""}</td>
+                <td>${item.barcode || ""}</td>
+                <td>${item.lot || item.lot_number || ""}</td>
+              </tr>
+            `;
+          });
+
+          document.getElementById("saleItemsModal").classList.add("show");
+          return;
+        }
+
+        const companyId = getCurrentCompanyId();
+        const url = companyId !== null && !isSuperAdmin()
+          ? `${API_BASE}/getInvoiceItems/${encodeURIComponent(invoiceNumber)}?companyId=${encodeURIComponent(companyId)}`
+          : `${API_BASE}/getInvoiceItems/${encodeURIComponent(invoiceNumber)}`;
+
+        const res = await fetch(url, { cache: "no-store" });
         const data = await res.json();
 
-        const items = data && data.success && Array.isArray(data.items) ? data.items : [];
-        const tbody = document.getElementById("saleItemsModalBody");
-
-        tbody.innerHTML = "";
+        const itemsRaw = data && data.success && Array.isArray(data.items) ? data.items : [];
+        const items = isSuperAdmin()
+          ? itemsRaw
+          : itemsRaw.filter((item) => getItemCompanyId(item) === getCurrentCompanyId());
 
         if (!items.length) {
           tbody.innerHTML = `
